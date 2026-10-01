@@ -47,7 +47,7 @@ Con el pipeline cada 2 horas, el máximo seguro es de unas 20 publicaciones por 
 ### Configurarla (una vez)
 
 1. Crear el repositorio en GitHub y subir el proyecto.
-2. En Cloudflare: *Manage account > Account API tokens > Create token*, plantilla **Edit Cloudflare Workers**, limitada a esta cuenta.
+2. En Cloudflare: *My Profile > API Tokens > Create Token*, plantilla **Edit Cloudflare Workers**, con *Account Resources* limitado a esta cuenta. El token se muestra una sola vez.
 3. En GitHub: *Settings > Secrets and variables > Actions*:
    - secreto `CLOUDFLARE_API_TOKEN`: el token del paso 2,
    - secreto `CLOUDFLARE_ACCOUNT_ID`: el ID de la cuenta (`npx wrangler whoami`),
