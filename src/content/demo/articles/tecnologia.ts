@@ -1,0 +1,96 @@
+import type { DemoSpec } from '../builder';
+
+export const tecnologia: DemoSpec[] = [
+  {
+    slug: 'universidades-modelo-lenguaje-espanol-rioplatense',
+    title: 'Un consorcio de universidades públicas presenta un modelo de lenguaje entrenado con español rioplatense',
+    dek: 'El modelo es abierto y está pensado para organismos públicos y pymes. Sus autores advierten que todavía comete errores y que no debe usarse para decisiones sobre personas.',
+    category: 'tecnologia',
+    tags: ['Inteligencia artificial', 'Universidades', 'Software libre'],
+    image: 'servidores',
+    minutesAgo: 420,
+    priority: 4,
+    status: 'verified',
+    sources: [
+      ['universidad', 'Presentación técnica y documentación del modelo.'],
+      ['informe-tecnico', 'Evaluación publicada junto con el modelo.'],
+      ['diario-regional', 'Cobertura de la presentación.'],
+    ],
+    claims: [
+      { text: 'El modelo se publicó con licencia abierta.', status: 'confirmed', sources: ['universidad', 'informe-tecnico'] },
+      { text: 'Supera a modelos comerciales en tareas en español.', status: 'unconfirmed', sources: ['universidad'] },
+    ],
+    body: [
+      { type: 'p', text: 'Un consorcio de universidades públicas presentó un modelo de lenguaje entrenado con textos en español, con énfasis en la variante rioplatense: documentos públicos, publicaciones académicas y textos con licencia abierta. El modelo y su documentación se publicaron con una licencia que permite usarlo y modificarlo.' },
+      { type: 'p', text: 'Sus autores lo pensaron para tareas acotadas, como resumir expedientes o responder consultas frecuentes en organismos públicos y pequeñas empresas. La evaluación publicada junto con el modelo muestra buenos resultados en comprensión de textos administrativos y resultados más débiles en razonamiento numérico.' },
+      { type: 'facts', confirmed: ['La licencia abierta y la documentación publicada.', 'Los resultados de la evaluación técnica de los propios autores.'], unconfirmed: ['La afirmación de que supera a modelos comerciales: no hay todavía evaluaciones independientes.'] },
+      { type: 'note', tone: 'context', title: 'Límites declarados', text: 'La documentación advierte que el modelo puede producir información incorrecta y desaconseja usarlo para decisiones que afecten derechos de personas, como el otorgamiento de beneficios.' },
+    ],
+  },
+  {
+    slug: 'estafas-mensajeria-como-reconocerlas',
+    title: 'Estafas por mensajería: cómo reconocerlas antes de responder',
+    dek: 'Los engaños más frecuentes se repiten con pocas variantes. Una guía con las señales de alerta y qué hacer si ya diste un dato.',
+    category: 'tecnologia',
+    type: 'explicador',
+    tags: ['Ciberseguridad', 'Estafas', 'Consejos'],
+    image: 'celular',
+    minutesAgo: 1800,
+    priority: 3,
+    status: 'verified',
+    sources: [
+      ['organismo', 'Guía oficial de prevención de fraudes.'],
+      ['asociacion-consumidores', 'Casos reportados por usuarios.'],
+    ],
+    body: [
+      { type: 'p', text: 'La mayoría de las estafas por mensajería siguen pocos guiones: alguien se hace pasar por un familiar con un número nuevo, por un banco que detectó un movimiento extraño o por un servicio que necesita "validar" tu cuenta. Todos buscan lo mismo: que hagas algo rápido, sin pensar.' },
+      { type: 'h2', text: 'Señales de alerta' },
+      { type: 'list', items: ['Te piden un código que te llegó por SMS. Ningún banco ni aplicación lo pide por chat.', 'Hay urgencia: "ahora", "tu cuenta se bloquea hoy", "necesito la plata ya".', 'El contacto es nuevo y dice ser alguien conocido.', 'Te mandan un enlace para "actualizar datos".'] },
+      { type: 'h2', text: 'Si ya diste un dato' },
+      { type: 'list', ordered: true, items: ['Cambiá la contraseña de la cuenta afectada y activá la verificación en dos pasos.', 'Llamá a tu banco por los teléfonos oficiales que figuran en la tarjeta.', 'Hacé la denuncia ante el organismo de defensa del consumidor o la fiscalía especializada de tu jurisdicción.'] },
+    ],
+  },
+  {
+    slug: 'redes-5g-nuevas-ciudades-interior',
+    title: 'Las redes 5G llegan a nueve ciudades del interior, con cobertura limitada al centro',
+    dek: 'Los operadores activaron antenas en áreas céntricas. La cobertura en barrios dependerá de permisos municipales que todavía se tramitan.',
+    category: 'tecnologia',
+    tags: ['Conectividad', '5G', 'Telecomunicaciones'],
+    image: 'antena',
+    minutesAgo: 1320,
+    priority: 2,
+    status: 'partial',
+    sources: [
+      ['organismo', 'Registro de antenas habilitadas.'],
+      ['comunicado-empresa', 'Anuncio de los operadores.'],
+      ['diario-regional', 'Situación de los permisos municipales.'],
+    ],
+    claims: [
+      { text: 'Hay antenas 5G habilitadas en el centro de nueve ciudades.', status: 'confirmed', sources: ['organismo', 'comunicado-empresa'] },
+      { text: 'La cobertura llegará a los barrios antes de marzo.', status: 'unconfirmed', sources: ['comunicado-empresa'] },
+    ],
+    body: [
+      { type: 'p', text: 'Los operadores de telefonía activaron antenas 5G en el centro de nueve ciudades del interior, según el registro de antenas habilitadas del organismo regulador. Por ahora, la cobertura se limita a las áreas céntricas.' },
+      { type: 'p', text: 'Las empresas anunciaron que extenderán el servicio a los barrios antes de marzo, pero ese plazo depende de permisos municipales para instalar nuevas estructuras. En al menos tres de las ciudades, esos trámites están en discusión en los concejos deliberantes.' },
+      { type: 'p', text: 'Para usar la red hace falta un teléfono compatible y un plan que la incluya. Los operadores no informaron cambios de precio.' },
+    ],
+  },
+  {
+    slug: 'falla-pagos-qr-comercios',
+    title: 'Una falla técnica afectó durante una hora los pagos con QR en comercios',
+    dek: 'El servicio ya funciona con normalidad, según la empresa.',
+    category: 'tecnologia',
+    type: 'breve',
+    tags: ['Pagos digitales', 'Comercio'],
+    minutesAgo: 95,
+    priority: 2,
+    status: 'verified',
+    sources: [
+      ['comunicado-empresa', 'Explicación de la falla y del restablecimiento.'],
+      ['radio-local', 'Reportes de comercios afectados.'],
+    ],
+    body: [
+      { type: 'p', text: 'Una falla técnica en un procesador de pagos impidió durante cerca de una hora cobrar con código QR en comercios de distintas ciudades. La empresa informó que el problema estuvo en un servidor de autorizaciones y que el servicio funciona con normalidad. Los pagos rechazados durante la falla no se debitaron.' },
+    ],
+  },
+];

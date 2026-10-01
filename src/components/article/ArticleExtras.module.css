@@ -1,0 +1,125 @@
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.tagsTitle {
+  font-size: var(--fs-meta);
+  font-weight: 650;
+  color: var(--ink-2);
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 0.85rem;
+  border-radius: var(--radius-pill);
+  background: var(--mist);
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.tag:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.sectionTitle {
+  font-size: var(--fs-ui-lg);
+  font-weight: 650;
+  margin-bottom: var(--space-3);
+}
+
+.updateList {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0;
+  list-style: none;
+  border-left: 1px solid var(--rule);
+}
+
+.updateList li {
+  position: relative;
+  padding-left: var(--space-5);
+  font-size: var(--fs-ui);
+  line-height: 1.5;
+}
+
+.updateList li::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 0.45rem;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1.5px solid var(--ink-3);
+}
+
+.updateList li:first-child::before {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.updateList time {
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.updateList p {
+  color: var(--ink);
+}
+
+.prevNext {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--column-gap);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--rule);
+}
+
+.pn {
+  display: grid;
+  gap: 0.35rem;
+  align-content: start;
+}
+
+.pnNext {
+  text-align: right;
+}
+
+.pnLabel {
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.pnTitle {
+  font-family: var(--font-sans);
+  font-size: var(--fs-h-xs);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+@media (max-width: 47.99rem) {
+  .prevNext {
+    grid-template-columns: 1fr;
+  }
+
+  .pnNext {
+    text-align: left;
+  }
+}

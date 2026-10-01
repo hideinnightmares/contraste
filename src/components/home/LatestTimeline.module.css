@@ -1,0 +1,157 @@
+.timeline {
+  position: relative;
+  padding: var(--space-5) var(--space-5) var(--space-4);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-width);
+  font-size: 1.625rem;
+  font-weight: var(--display-weight);
+  letter-spacing: -0.01em;
+}
+
+.signal {
+  position: relative;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: var(--highlight);
+}
+
+.signal::before,
+.signal::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--highlight);
+  animation: ripple 2.8s var(--ease-out) infinite;
+}
+
+.signal::after {
+  animation-delay: 1.4s;
+}
+
+@keyframes ripple {
+  from {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
+
+.all {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.all:hover {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.list {
+  position: relative;
+  display: grid;
+}
+
+/* Línea vertical que une los horarios. */
+.list::before {
+  content: '';
+  position: absolute;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  left: 3.4rem;
+  width: 1px;
+  background: var(--rule);
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  gap: 1.35rem;
+  padding-block: 0.7rem;
+}
+
+.item::before {
+  content: '';
+  position: absolute;
+  left: calc(3.4rem - 3.5px);
+  top: 1.2rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1.5px solid var(--ink-3);
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+
+.item:first-child::before {
+  background: var(--highlight);
+  border-color: var(--highlight);
+}
+
+.item:hover::before {
+  border-color: var(--highlight);
+}
+
+.time {
+  padding-top: 0.05rem;
+  font-size: var(--fs-meta);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--highlight);
+  line-height: 1.6;
+}
+
+.content {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.section {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.live {
+  color: var(--highlight);
+}
+
+.headline {
+  font-family: var(--font-sans);
+  font-size: var(--fs-h-xs);
+  font-weight: 700;
+  line-height: 1.28;
+  text-wrap: pretty;
+}
+
+/* En teléfonos, la línea de tiempo se acorta: el resto está a un toque en "Todas las últimas". */
+@media (max-width: 47.99rem) {
+  .item:nth-child(n + 6) {
+    display: none;
+  }
+}

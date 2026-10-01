@@ -1,0 +1,534 @@
+/*
+ * Contraste: sistema visual (ver DESIGN.md en la raíz)
+ *
+ * Blanco, negro y un solo color: amarillo resaltador, el marcador de quien
+ * verifica. Las fotos se ven en blanco y negro de alto contraste y recuperan el
+ * color al pasar el puntero o al enfocarlas. Titulares en Archivo condensada y
+ * pesada; lectura en Newsreader. Esquinas rectas, sin sombras.
+ * Verde y ámbar quedan reservados a estados de verificación y siempre llevan texto.
+ * Los contrastes mínimos (WCAG AA) se verifican con `npm run check:contrast`.
+ */
+
+:root {
+  --paper: #ffffff;
+  --mist: #f2f2f2;
+  --mist-strong: #e6e6e6;
+  --ink: #0a0a0a;
+  --ink-2: #3d3d3d;
+  --ink-3: #696969;
+  --rule: #dcdcdc;
+  --rule-strong: #0a0a0a;
+  --accent: #0a0a0a;
+  --accent-strong: #000000;
+  --accent-wash: #fff3b0;
+  --on-accent: #ffffff;
+  --highlight: #ffd60a;
+  --on-highlight: #0a0a0a;
+  --link: #0a0a0a;
+  --verified: #0f6a41;
+  --verified-wash: #e3f3ea;
+  --disputed: #8a4f00;
+  --disputed-wash: #fbefdc;
+  --demo: #0a0a0a;
+  --demo-wash: #f2f2f2;
+  --ad-surface: #f2f2f2;
+  --ad-ink: #696969;
+  --scrim: rgb(0 0 0 / 0.6);
+  --image-placeholder: #e3e3e3;
+  --shadow-float: none;
+  color-scheme: light;
+
+  /* Una familia con ancho variable para titulares e interfaz, y una serif de lectura. */
+  --font-display: var(--font-archivo), 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: var(--font-archivo), 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: var(--font-newsreader), Georgia, 'Times New Roman', serif;
+  --display-width: 'wdth' 70;
+  --display-weight: 800;
+  --compact-width: 'wdth' 88;
+
+  /* Escala tipográfica: titulares fluidos, interfaz fija. */
+  --fs-meta: 0.8125rem;
+  --fs-ui: 0.9375rem;
+  --fs-ui-lg: 1.0625rem;
+  --fs-body: clamp(1.125rem, 1.07rem + 0.25vw, 1.25rem);
+  --fs-dek: clamp(1.125rem, 1.05rem + 0.35vw, 1.3125rem);
+  --fs-h-xs: 1.0625rem;
+  --fs-h-s: clamp(1.125rem, 1.06rem + 0.25vw, 1.25rem);
+  --fs-h-m: clamp(1.75rem, 1.45rem + 1.1vw, 2.375rem);
+  --fs-h-l: clamp(2.25rem, 1.7rem + 2.2vw, 3.625rem);
+  --fs-h-xl: clamp(3rem, 1.7rem + 5.4vw, 6.25rem);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+
+  --gutter: clamp(1rem, 3.2vw, 2.5rem);
+  --column-gap: clamp(1.25rem, 2.6vw, 2.5rem);
+  --max-width: 88rem;
+  --measure: 36rem;
+
+  /* Geometría recta: todo rectángulo va a 0. Lo único redondo son los botones
+     de solo ícono y los puntos de estado. */
+  --radius-photo: 0px;
+  --radius-panel: 0px;
+  --radius-control: 0px;
+  --radius-pill: 0px;
+  --radius-round: 999px;
+
+  --ease-out: cubic-bezier(0.16, 0.84, 0.24, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 160ms;
+  --dur-base: 280ms;
+  --dur-slow: 560ms;
+  --dur-reveal: 1100ms;
+
+  --header-height: 4.25rem;
+}
+
+:root[data-theme='dark'] {
+  --paper: #0b0b0b;
+  --mist: #161616;
+  --mist-strong: #222222;
+  --ink: #f4f4f1;
+  --ink-2: #c9c9c6;
+  --ink-3: #9d9d9a;
+  --rule: #2b2b2b;
+  --rule-strong: #f4f4f1;
+  --accent: #f4f4f1;
+  --accent-strong: #ffffff;
+  --accent-wash: #3a3310;
+  --on-accent: #0b0b0b;
+  --highlight: #ffd60a;
+  --on-highlight: #0b0b0b;
+  --link: #f4f4f1;
+  --verified: #6fd6a6;
+  --verified-wash: #0f2a20;
+  --disputed: #f2b862;
+  --disputed-wash: #33240c;
+  --demo: #f4f4f1;
+  --demo-wash: #1c1c1c;
+  --ad-surface: #141414;
+  --ad-ink: #9d9d9a;
+  --scrim: rgb(0 0 0 / 0.72);
+  --image-placeholder: #1f1f1f;
+  color-scheme: dark;
+}
+
+/* Sin preferencia guardada, se sigue al sistema operativo. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: #0b0b0b;
+    --mist: #161616;
+    --mist-strong: #222222;
+    --ink: #f4f4f1;
+    --ink-2: #c9c9c6;
+    --ink-3: #9d9d9a;
+    --rule: #2b2b2b;
+    --rule-strong: #f4f4f1;
+    --accent: #f4f4f1;
+    --accent-strong: #ffffff;
+    --accent-wash: #3a3310;
+    --on-accent: #0b0b0b;
+    --highlight: #ffd60a;
+    --on-highlight: #0b0b0b;
+    --link: #f4f4f1;
+    --verified: #6fd6a6;
+    --verified-wash: #0f2a20;
+    --disputed: #f2b862;
+    --disputed-wash: #33240c;
+    --demo: #f4f4f1;
+    --demo-wash: #1c1c1c;
+    --ad-surface: #141414;
+    --ad-ink: #9d9d9a;
+    --scrim: rgb(0 0 0 / 0.72);
+    --image-placeholder: #1f1f1f;
+    color-scheme: dark;
+  }
+}
+
+/*
+ * Banda invertida: paleta oscura siempre. En modo claro son los bloques negros
+ * (último momento, análisis, pie); en modo oscuro, una superficie más profunda.
+ */
+.invert {
+  --paper: #0b0b0b;
+  --mist: #161616;
+  --mist-strong: #222222;
+  --ink: #f4f4f1;
+  --ink-2: #c9c9c6;
+  --ink-3: #9d9d9a;
+  --rule: #2b2b2b;
+  --rule-strong: #f4f4f1;
+  --accent: #f4f4f1;
+  --accent-strong: #ffffff;
+  --accent-wash: #3a3310;
+  --on-accent: #0b0b0b;
+  --highlight: #ffd60a;
+  --on-highlight: #0b0b0b;
+  --link: #f4f4f1;
+  --verified: #6fd6a6;
+  --verified-wash: #0f2a20;
+  --disputed: #f2b862;
+  --disputed-wash: #33240c;
+  --demo: #f4f4f1;
+  --demo-wash: #1c1c1c;
+  --ad-surface: #141414;
+  --ad-ink: #9d9d9a;
+  --scrim: rgb(0 0 0 / 0.72);
+  --image-placeholder: #1f1f1f;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+:root[data-theme='dark'] .invert {
+  --paper: #000000;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .invert {
+    --paper: #000000;
+  }
+}
+
+/*
+ * Banda de resaltador: fondo amarillo con tinta negra en los dos temas. Se usa
+ * para dos bloques de la portada ("En breve" y el newsletter).
+ */
+.highlight-band {
+  --paper: #ffd60a;
+  --mist: #f5cc00;
+  --mist-strong: #ebc300;
+  --ink: #0a0a0a;
+  --ink-2: #262626;
+  --ink-3: #3a3a3a;
+  --rule: rgb(10 10 10 / 0.22);
+  --rule-strong: #0a0a0a;
+  --accent: #0a0a0a;
+  --accent-wash: #ffe766;
+  --on-accent: #ffd60a;
+  --highlight: #0a0a0a;
+  --on-highlight: #ffd60a;
+  --link: #0a0a0a;
+  --demo: #0a0a0a;
+  --disputed: #5c3500;
+  --verified: #084a2d;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--header-height) + 1rem);
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--fs-ui);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  transition: background-color var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out);
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+blockquote,
+ul,
+ol {
+  margin: 0;
+}
+
+ul[role='list'],
+ol[role='list'] {
+  list-style: none;
+  padding: 0;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+::selection {
+  background: var(--highlight);
+  color: var(--on-highlight);
+}
+
+/* Foco visible y consistente en todo el sitio. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 200;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-control);
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 600;
+  transform: translateY(-160%);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/*
+ * Titular enlazado: el subrayado crece desde la izquierda al pasar o enfocar,
+ * y funciona en titulares de varias líneas.
+ */
+.headline-link {
+  background-image: linear-gradient(var(--highlight), var(--highlight));
+  background-repeat: no-repeat;
+  background-position: 0 96%;
+  background-size: 0% 0.16em;
+  transition: background-size var(--dur-slow) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  padding-bottom: 0.02em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* Al pasar o enfocar, el titular se subraya con el resaltador amarillo. */
+a:hover .headline-link,
+a:focus-visible .headline-link,
+.story:hover .headline-link,
+.story:focus-within .headline-link {
+  background-size: 100% 0.16em;
+}
+
+/*
+ * Fotos en blanco y negro de alto contraste: unifican imágenes de orígenes
+ * distintos y le dan identidad al medio. Al pasar o enfocar la nota, la foto
+ * recupera el color y se acerca apenas. La foto principal de cada nota abierta
+ * se muestra en color (.photo-color).
+ */
+.photo-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-photo);
+  background: var(--image-placeholder);
+}
+
+.photo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.12) brightness(1.02);
+  transition: transform 900ms var(--ease-out), filter 700ms var(--ease-out), opacity var(--dur-slow) var(--ease-out);
+}
+
+.photo-color img {
+  filter: none;
+}
+
+a:hover .photo-frame img,
+.story:hover .photo-frame img,
+.story:focus-within .photo-frame img {
+  transform: scale(1.03);
+  filter: grayscale(0) contrast(1) brightness(1);
+}
+
+/*
+ * Tarjeta con enlace extendido: el titular es el único enlace (un solo punto de
+ * tabulación por nota) y su área cubre toda la tarjeta.
+ */
+.story {
+  position: relative;
+}
+
+.story-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.story-link:focus-visible {
+  outline: none;
+}
+
+.story:has(.story-link:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+}
+
+/* Aparición al hacer scroll: discreta y una sola vez por bloque. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out);
+  transition-delay: calc(var(--reveal-index, 0) * 70ms);
+}
+
+[data-reveal='visible'] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Sin JavaScript, el contenido se ve igual. */
+.no-js [data-reveal] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Transiciones entre páginas (View Transitions API vía React). */
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 100;
+}
+
+::view-transition-old(site-header) {
+  display: none;
+}
+
+::view-transition-new(site-header) {
+  animation: none;
+}
+
+::view-transition-group(.photo-morph) {
+  animation-duration: 520ms;
+  animation-timing-function: var(--ease-in-out);
+}
+
+::view-transition-image-pair(.photo-morph) {
+  animation-name: photo-soften;
+}
+
+@keyframes photo-soften {
+  35% {
+    filter: blur(2px);
+  }
+}
+
+::view-transition-old(.page-fade) {
+  animation: 160ms var(--ease-out) both page-out;
+}
+
+::view-transition-new(.page-fade) {
+  animation: 360ms var(--ease-out) 120ms both page-in;
+}
+
+@keyframes page-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+
+  a:hover .photo-frame img,
+  .story:hover .photo-frame img,
+  .story:focus-within .photo-frame img {
+    transform: none;
+  }
+
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .headline-link {
+    background-image: none;
+  }
+
+  a:hover .headline-link {
+    text-decoration: underline;
+  }
+}

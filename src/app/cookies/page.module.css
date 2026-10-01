@@ -1,0 +1,22 @@
+.tableWrap {
+  overflow-x: auto;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: var(--fs-ui);
+  font-weight: 650;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.button:hover {
+  background: var(--ink);
+  color: var(--paper);
+}

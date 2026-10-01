@@ -1,0 +1,36 @@
+.header {
+  display: grid;
+  gap: var(--space-3);
+  padding-block: var(--space-6) var(--space-7);
+}
+
+.eyebrow {
+  font-size: var(--fs-meta);
+  color: var(--ink-2);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-width);
+  font-size: clamp(2.75rem, 1.6rem + 5vw, 6rem);
+  font-weight: var(--display-weight);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  animation: header-in 760ms var(--ease-out) both;
+}
+
+.description {
+  max-width: 40rem;
+  font-family: var(--font-serif);
+  font-size: var(--fs-dek);
+  line-height: 1.45;
+  color: var(--ink-2);
+  animation: header-in 760ms var(--ease-out) 90ms both;
+}
+
+@keyframes header-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}

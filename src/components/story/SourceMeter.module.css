@@ -1,0 +1,72 @@
+.meter {
+  --tone: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink-2);
+  font-size: var(--fs-meta);
+  line-height: 1.3;
+}
+
+/* Los colores de estado solo aparecen en el medidor grande (la nota abierta);
+   en las tarjetas el medidor es monocromo para no sumar ruido. */
+.large[data-status='verified'] {
+  --tone: var(--verified);
+}
+
+.large[data-status='disputed'] {
+  --tone: var(--disputed);
+}
+
+.bars {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.bar {
+  width: 5px;
+  height: 11px;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--tone) 22%, transparent);
+}
+
+.bar[data-kind='independent'] {
+  background: var(--tone);
+}
+
+.bar[data-kind='disputed'] {
+  background: repeating-linear-gradient(135deg, var(--tone) 0 1.5px, transparent 1.5px 3px);
+  box-shadow: inset 0 0 0 1px var(--tone);
+}
+
+.icon {
+  flex: none;
+  color: var(--tone);
+}
+
+.large {
+  font-size: var(--fs-ui);
+  gap: 0.55rem;
+}
+
+.large .bar {
+  width: 8px;
+  height: 18px;
+  border-radius: 0;
+}
+
+.large .bars {
+  gap: 3px;
+}
+
+.large .text {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+@media (forced-colors: active) {
+  .bar,
+  .bar[data-kind='independent'] {
+    background: CanvasText;
+  }
+}

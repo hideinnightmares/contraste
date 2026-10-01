@@ -1,0 +1,245 @@
+.banner {
+  position: fixed;
+  left: max(1rem, env(safe-area-inset-left));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 90;
+  width: min(27rem, calc(100vw - 2rem));
+  padding: var(--space-5);
+  border-radius: var(--radius-panel);
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--rule-strong);
+  animation: banner-in 520ms var(--ease-out) 600ms both;
+}
+
+@keyframes banner-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+.title {
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-width);
+  font-size: var(--fs-h-s);
+  font-weight: var(--display-weight);
+  margin-bottom: var(--space-2);
+}
+
+.text {
+  font-size: var(--fs-meta);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.link {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.button,
+.buttonPrimary {
+  min-height: 2.75rem;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.button {
+  border: 1px solid var(--ink);
+  background: transparent;
+}
+
+.button:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.buttonPrimary {
+  padding: 0 1.25rem;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.buttonPrimary:hover {
+  background: var(--ink-2);
+  border-color: var(--ink-2);
+  color: var(--paper);
+}
+
+.button:active,
+.buttonPrimary:active {
+  transform: scale(0.97);
+}
+
+.textButton {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.dialog {
+  width: min(34rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-panel);
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--rule-strong);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out),
+    overlay var(--dur-base) allow-discrete, display var(--dur-base) allow-discrete;
+}
+
+.dialog[open] {
+  opacity: 1;
+  transform: none;
+}
+
+@starting-style {
+  .dialog[open] {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.dialog::backdrop {
+  background: var(--scrim);
+}
+
+.form {
+  padding: clamp(1.25rem, 4vw, 2rem);
+}
+
+.dialogTitle {
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-width);
+  font-size: var(--fs-h-m);
+  font-weight: var(--display-weight);
+  letter-spacing: -0.01em;
+}
+
+.dialogText {
+  margin-top: var(--space-2);
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+
+.options {
+  margin-top: var(--space-5);
+}
+
+.option {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-block: var(--space-4);
+  border-top: 1px solid var(--rule);
+}
+
+.optionLabel {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+  width: 100%;
+  cursor: pointer;
+}
+
+.optionName {
+  display: block;
+  font-weight: 650;
+}
+
+.optionText {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: var(--fs-meta);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.always {
+  flex: none;
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  color: var(--verified);
+}
+
+.switch {
+  appearance: none;
+  flex: none;
+  position: relative;
+  width: 2.75rem;
+  height: 1.625rem;
+  margin: 0.1rem 0 0;
+  border-radius: 999px;
+  background: var(--mist-strong);
+  border: 1px solid var(--ink-3);
+  cursor: pointer;
+  transition: background-color var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out);
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.switch:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.switch:checked::after {
+  transform: translateX(1.125rem);
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+}
+
+.dialogActions .textButton {
+  grid-column: auto;
+}
+
+@media (forced-colors: active) {
+  .switch {
+    border: 1px solid CanvasText;
+  }
+
+  .switch:checked {
+    background: Highlight;
+  }
+}

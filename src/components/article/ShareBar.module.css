@@ -1,0 +1,38 @@
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.button,
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0 0.9rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  color: var(--ink);
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+
+.button:hover,
+.link:hover {
+  border-color: var(--ink);
+}
+
+.button:active,
+.link:active {
+  transform: scale(0.96);
+}
+
+.button[data-copied='true'] {
+  border-color: var(--verified);
+  background: var(--verified-wash);
+  color: var(--verified);
+}

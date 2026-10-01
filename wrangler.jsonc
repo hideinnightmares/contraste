@@ -1,0 +1,26 @@
+// Sitio estático en Cloudflare Workers: solo archivos, sin código de servidor. Ver docs/DESPLIEGUE.md.
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "contraste",
+	"compatibility_date": "2026-09-29",
+	"assets": {
+		// Salida de `npm run build` (next build con output: 'export' + scripts/postbuild.ts).
+		"directory": "./out",
+		// Una dirección que no existe recibe out/404.html con estado 404.
+		"not_found_handling": "404-page",
+		// /nota/slug sirve out/nota/slug.html, sin barra final.
+		"html_handling": "auto-trailing-slash"
+	},
+	// La versión dinámica anterior (OpenNext) usaba una cola en un Durable Object para regenerar
+	// páginas. No guardaba datos editoriales; v2 la elimina.
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": ["DOQueueHandler"]
+		},
+		{
+			"tag": "v2",
+			"deleted_classes": ["DOQueueHandler"]
+		}
+	]
+}

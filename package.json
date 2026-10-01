@@ -1,0 +1,44 @@
+{
+  "name": "contraste",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build && tsx scripts/postbuild.ts",
+    "preview": "wrangler dev --port 8787",
+    "deploy": "npm run build && wrangler deploy",
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "pipeline": "tsx src/pipeline/cli.ts",
+    "check:contrast": "tsx scripts/check-contrast.ts",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run check:contrast"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@google/genai": "^2.25.0",
+    "fast-xml-parser": "^5.11.2",
+    "lucide-react": "^1.49.0",
+    "next": "16.3.8",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.19.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.8",
+    "sharp": "^0.35.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^5.0.3",
+    "wrangler": "^4.146.0"
+  }
+}

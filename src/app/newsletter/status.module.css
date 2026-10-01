@@ -1,0 +1,63 @@
+.wrap {
+  padding-block: var(--space-9);
+}
+
+.card {
+  max-width: 36rem;
+  margin-inline: auto;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  border-radius: var(--radius-panel);
+  background: var(--mist);
+  border-top: 4px solid var(--ink);
+}
+
+.card[data-tone='success'] {
+  border-top-color: var(--verified);
+}
+
+.card[data-tone='error'] {
+  border-top-color: var(--disputed);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-width);
+  font-size: var(--fs-h-l);
+  font-weight: var(--display-weight);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.body {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.body button {
+  justify-self: start;
+  min-height: 2.75rem;
+  padding: 0 1.4rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 650;
+}
+
+.body button:hover {
+  background: var(--ink-2);
+  color: var(--paper);
+}
+
+.back {
+  margin-top: var(--space-6);
+}
+
+.back a {
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}

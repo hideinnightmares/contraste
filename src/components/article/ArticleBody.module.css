@@ -1,0 +1,120 @@
+.body {
+  font-family: var(--font-serif);
+  font-size: var(--fs-body);
+  line-height: 1.66;
+  color: var(--ink);
+  font-optical-sizing: auto;
+  hanging-punctuation: first;
+}
+
+.body > * + * {
+  margin-top: 1.15em;
+}
+
+.p {
+  text-wrap: pretty;
+}
+
+.body > .p:first-child::first-line {
+  font-variant-caps: normal;
+}
+
+.h2 {
+  margin-top: 1.9em !important;
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-width);
+  font-size: clamp(1.375rem, 1.25rem + 0.5vw, 1.625rem);
+  font-weight: var(--display-weight);
+  line-height: 1.2;
+  letter-spacing: -0.012em;
+}
+
+.list {
+  padding-left: 1.2em;
+}
+
+.list li + li {
+  margin-top: 0.45em;
+}
+
+.list li::marker {
+  color: var(--accent);
+}
+
+.note {
+  padding: 1rem 1.25rem;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+  background: var(--mist);
+  font-family: var(--font-sans);
+  font-size: var(--fs-ui);
+  line-height: 1.55;
+}
+
+.note[data-tone='disputed'] {
+  border-left-color: var(--disputed);
+  background: var(--disputed-wash);
+}
+
+.noteTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 650;
+}
+
+.note[data-tone='disputed'] .noteTitle {
+  color: var(--disputed);
+}
+
+.noteText {
+  margin-top: 0.35rem;
+  color: var(--ink-2);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-panel);
+  background: var(--rule);
+  font-family: var(--font-sans);
+  font-size: var(--fs-ui);
+  line-height: 1.5;
+}
+
+.factsColumn {
+  padding: 1.1rem 1.25rem 1.25rem;
+  background: var(--paper);
+}
+
+.factsTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  font-size: var(--fs-ui);
+  font-weight: 650;
+}
+
+.factsColumn[data-kind='confirmed'] .factsTitle {
+  color: var(--verified);
+}
+
+.factsColumn[data-kind='unconfirmed'] .factsTitle {
+  color: var(--disputed);
+}
+
+.factsList {
+  display: grid;
+  gap: 0.5rem;
+  padding-left: 1.1em;
+  color: var(--ink-2);
+}
+
+.ad {
+  margin-block: 2em !important;
+  font-family: var(--font-sans);
+}

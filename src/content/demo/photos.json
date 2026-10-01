@@ -1,0 +1,350 @@
+{
+  "parlamento": {
+    "src": "/images/demo/parlamento.jpg",
+    "width": 2000,
+    "height": 1337,
+    "blurDataURL": "data:image/webp;base64,UklGRnIAAABXRUJQVlA4IGYAAADwAQCdASoQAAsAA4BaJbACdAEWY9kYTSAA/Xj2tGmoMsgFRC+rZfSvpNtKpwooD13/puN3S8Or6JjX/SRZc2cCa/mZLg8ftvOorvgM0Tz8wa7Mrk98oZQ7nm+E5mU0vJ655Y8iAAA=",
+    "credit": {
+      "author": "Irekia, Gobierno Vasco",
+      "license": "CC BY 3.0 es",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/es/deed.en",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Eusko_Legebiltzarra,_Euskal_Herria.jpg"
+    }
+  },
+  "tormenta": {
+    "src": "/images/demo/tormenta.jpg",
+    "width": 2000,
+    "height": 1124,
+    "blurDataURL": "data:image/webp;base64,UklGRj4AAABXRUJQVlA4IDIAAADwAQCdASoQAAkAA4BaJZwCw7EPAOOlhgAA/vfInMQtNx0XI4NgtU1oyOF5VChpqIAAAA==",
+    "credit": {
+      "author": "Mathias Krumbholz",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Lightning_Pritzerbe_01_(MK).jpg"
+    }
+  },
+  "urna": {
+    "src": "/images/demo/urna.jpg",
+    "width": 2000,
+    "height": 1125,
+    "blurDataURL": "data:image/webp;base64,UklGRlQAAABXRUJQVlA4IEgAAADwAQCdASoQAAkAA4BaJagCdADp5IydkMAA/kiOSN2e1nkmIhKxCI4tKitfK8t3E+msjIjtdonOsc51aQFmdLmtM7G3JycJQAA=",
+    "credit": {
+      "author": "W.carter",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Ballot_dropped_into_ballot_box_2024_Swedish_EU_election_at_St%C3%A5ngen%C3%A4sskolan,_Brastad_2.jpg"
+    }
+  },
+  "supermercado": {
+    "src": "/images/demo/supermercado.jpg",
+    "width": 2000,
+    "height": 1500,
+    "blurDataURL": "data:image/webp;base64,UklGRmQAAABXRUJQVlA4IFgAAAAwAgCdASoQAAwAA4BaJZACdAYubii9e4yEIAD9UlhxzKvbgjt851m87DUW8bKE87Lv7P4mZtmNis5lyroxpFslq7/Y+PcXiWQsKDuExawknbFKUMatLQAA",
+    "credit": {
+      "author": "Wilfredor",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Metro_(supermarket)_08.jpg"
+    }
+  },
+  "pago": {
+    "src": "/images/demo/pago.jpg",
+    "width": 2000,
+    "height": 1333,
+    "blurDataURL": "data:image/webp;base64,UklGRnYAAABXRUJQVlA4IGoAAABQAgCdASoQAAsAA4BaJbACdAEfiBJT9Z8h5AAAzjsYk1FzTcxZ/X2ZWZwNQTJyM06wels9iz0GjC0NrAtfnFXbkC6r/9wOYFvAgPpamgdRg5WavdPM+jzeXzU+F7n6WvX429pH5CJrn4AA",
+    "credit": {
+      "author": "Mañico",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Card_Payment_(176811287).jpeg"
+    }
+  },
+  "cosecha": {
+    "src": "/images/demo/cosecha.jpg",
+    "width": 2000,
+    "height": 1295,
+    "blurDataURL": "data:image/webp;base64,UklGRlIAAABXRUJQVlA4IEYAAAAwAgCdASoQAAoAA4BaJZgCdGuAAs0HRzrtgAD+thX0KL7Ukv72d9o42LYDmjg1PrFm0jY55fvUQXf73LiK1tWFUqaMAAAA",
+    "credit": {
+      "author": "Larsz/Lars Plougmann",
+      "license": "CC BY-SA 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Claas_combine_in_Denmark.jpg"
+    }
+  },
+  "cumbre": {
+    "src": "/images/demo/cumbre.jpg",
+    "width": 2000,
+    "height": 1283,
+    "blurDataURL": "data:image/webp;base64,UklGRmQAAABXRUJQVlA4IFgAAACwAQCdASoQAAoAA4BaJaQAArBsNnBAAP7SZBoVPJGdXklNePREu5Zlfnrm/j98CM7deTzfhJgo0lNCq4ViUvymADy6yVd/YSR6HYyyOWzR0r4fypdPAAAA",
+    "credit": {
+      "author": "Autor desconocido",
+      "license": "Public domain",
+      "licenseUrl": null,
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Delegates_Seated_in_Finlandia_Hall_at_the_Opening_of_the_Conference_on_Security_and_Cooperation_in_Europe_(CSCE),_in_Helsinki,_Finland_-_NARA_-_23898491.jpg"
+    }
+  },
+  "puerto": {
+    "src": "/images/demo/puerto.jpg",
+    "width": 2000,
+    "height": 1315,
+    "blurDataURL": "data:image/webp;base64,UklGRlQAAABXRUJQVlA4IEgAAADwAQCdASoQAAsAA4BaJbACdADaPZJruwAA8D0JYpj4fxvvvO+6kNQSmwPr5js00DOpObWMqjEfN+ng3/birRQnELDWEPNwAAA=",
+    "credit": {
+      "author": "Petar Milošević",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:MSC_HARMONY_III_(container_ship,_2006)_in_Port_Koper_(SIKOP,_2024).jpg"
+    }
+  },
+  "servidores": {
+    "src": "/images/demo/servidores.jpg",
+    "width": 2000,
+    "height": 1333,
+    "blurDataURL": "data:image/webp;base64,UklGRlQAAABXRUJQVlA4IEgAAADQAQCdASoQAAsAA4BaJYwAAu0JXzhNgAD+9JSmXKaG7riIJSJpdo/no6ezpghcRDwdisDLDXMjsQCOGcC30bG+GyrGAnIwAAA=",
+    "credit": {
+      "author": "NOIRLab/NSF/AURA/T. Slovinský",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:NOIRLab_HQ_Server_Racks_(6V6A0404-CC).jpg"
+    }
+  },
+  "celular": {
+    "src": "/images/demo/celular.jpg",
+    "width": 2000,
+    "height": 1333,
+    "blurDataURL": "data:image/webp;base64,UklGRoIAAABXRUJQVlA4IHYAAADwAQCdASoQAAsAA4BaJagCdAYvrFQIUcAA/VP20hjzSfasrtCGNyBkUX/ZMM3oJ27Lq2ZUAItZu47x+u2Hj4e7cZeupvLDqMPFpeQRqMtzVaef43Xis8AEXho9ItLYPSuyD+0tx90XBMa07yBikGPYxu+SlAAA",
+    "credit": {
+      "author": "Pixel.la",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Hands-coffee-smartphone-technology_(23698591814).jpg"
+    }
+  },
+  "antena": {
+    "src": "/images/demo/antena.jpg",
+    "width": 2000,
+    "height": 1500,
+    "blurDataURL": "data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAADQAQCdASoQAAwAA4BaJbACdAClQWy3gAD97YcNv9nr+1GCDXy4OLYVFxACTDX25jIb5V+bqYj69ax/k5byyPNjTAA=",
+    "credit": {
+      "author": "Wikideas1",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Lattice_cell_tower-2.jpg"
+    }
+  },
+  "rana": {
+    "src": "/images/demo/rana.jpg",
+    "width": 2000,
+    "height": 1333,
+    "blurDataURL": "data:image/webp;base64,UklGRlwAAABXRUJQVlA4IFAAAAAwAgCdASoQAAsAA4BaJbACdAEfAp+3NoS8AAD+7RbJqSBCVHZJ3xYAH1ZbxPXLp9Wfp7j9iWhxEBB0HsA/NBrnxj383/mw5HOCegnsJiAAAA==",
+    "credit": {
+      "author": "Charles J. Sharp",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Golden-eyed_tree_frog_(Agalychnis_annae).jpg"
+    }
+  },
+  "observatorio": {
+    "src": "/images/demo/observatorio.jpg",
+    "width": 2000,
+    "height": 1236,
+    "blurDataURL": "data:image/webp;base64,UklGRj4AAABXRUJQVlA4IDIAAACwAQCdASoQAAoAA4BaJYwAAudHHcgAAP7ZaqDryUCFlbKQhYudRzT16wu0xhFV9xwAAA==",
+    "credit": {
+      "author": "Astrobond",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Assy-Turgen_Observatory_against_the_backdrop_of_the_center_of_the_Milky_Way_and_the_star-forming_region_around_Antares.jpg"
+    }
+  },
+  "nubes": {
+    "src": "/images/demo/nubes.jpg",
+    "width": 2000,
+    "height": 1000,
+    "blurDataURL": "data:image/webp;base64,UklGRkwAAABXRUJQVlA4IEAAAACwAQCdASoQAAgAA4BaJYwCdAEQ/GBgAP4GFNXDYeaSuy5DKIk6ITQ2I3J2mcDSr7GCI+uJGER6dezYFhSEHYAA",
+    "credit": {
+      "author": "Basile Morin",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Pirogue_on_the_Mekong_under_grey_clouds_before_a_storm.jpg"
+    }
+  },
+  "cine": {
+    "src": "/images/demo/cine.jpg",
+    "width": 2000,
+    "height": 1335,
+    "blurDataURL": "data:image/webp;base64,UklGRlQAAABXRUJQVlA4IEgAAAAQAgCdASoQAAsAA4BaJbACdAD0X6znRgAAAP7RzVTFXuEPH7y3u0XunvpYNrbeC37zv3S06u1L87DI9DXD643Lt/t5zZusUAA=",
+    "credit": {
+      "author": "Tuxyso",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Lichtburg-Essen-Kinosaal-2025.jpg"
+    }
+  },
+  "muestra": {
+    "src": "/images/demo/muestra.jpg",
+    "width": 2000,
+    "height": 1500,
+    "blurDataURL": "data:image/webp;base64,UklGRmoAAABXRUJQVlA4IF4AAAAQAgCdASoQAAwAA4BaJQBOgCIM0r993fEqAP6RZx02kDzioIymbtVy7L5XIHzCsyfKBOIlNdEfyG7cF3yJxCaohXz+61aTcK9S6Ol/Ru4MzxTdH5uztW63chZooAAA",
+    "credit": {
+      "author": "Guangywatchwii",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:HKU_%E9%A6%99%E6%B8%AF%E5%A4%A7%E5%AD%B8%E7%BE%8E%E8%A1%93%E5%8D%9A%E7%89%A9%E9%A4%A8_Art_Gallery_T_T_Tsui_exhibition_hall_interior_April_2018_LGM_visitor.jpg"
+    }
+  },
+  "concierto": {
+    "src": "/images/demo/concierto.jpg",
+    "width": 2000,
+    "height": 1335,
+    "blurDataURL": "data:image/webp;base64,UklGRnwAAABXRUJQVlA4IHAAAABQAgCdASoQAAsAA4BaJbACdAYxZwnGn2mczCgA/uRrQrdwhF2+q/2xZT2uWscV5UaCCMdZSGeTPENqpGvjbYvaveURy+Wt/gOJfDG+f84iWZU5zb2ja5yIH1wL+6j/BptsPPTkVt4BEGsoIdfi4AAA",
+    "credit": {
+      "author": "PinkBeachPlanet",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Beach-Please-2022-crowd-stage-lights-night-performance.jpg"
+    }
+  },
+  "estadio": {
+    "src": "/images/demo/estadio.jpg",
+    "width": 2000,
+    "height": 1333,
+    "blurDataURL": "data:image/webp;base64,UklGRlgAAABXRUJQVlA4IEwAAADwAQCdASoQAAsAA4BaJQBOgCHaUwRnXIAA/lvxkDZfdENuW+fu+ogI7KGiTq2et5AfwBR78qGlgVNB6xN6sVvfwwwhu+EqFwrkwAAA",
+    "credit": {
+      "author": "TrickyH",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Crowd_at_Dora_Stadium.jpg"
+    }
+  },
+  "tribuna": {
+    "src": "/images/demo/tribuna.jpg",
+    "width": 2000,
+    "height": 1335,
+    "blurDataURL": "data:image/webp;base64,UklGRoIAAABXRUJQVlA4IHYAAABwAgCdASoQAAsAA4BaJbACdLoAPQAeSfeR8WGwAP7zVEKACesp+hvGHgQUO0MT2bcIIOJhwaZ5EV8jyULkR2gDVf9MQ22Cp5BzQ7Vz5VwOH35szcQupLsOArzb4ZumBm87AztfkXuDfV7gN/g+Mg9Yt/DY5GgA",
+    "credit": {
+      "author": "SEBCLEM13",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Blue_Football_Stadium_Seats.jpg"
+    }
+  },
+  "maraton": {
+    "src": "/images/demo/maraton.jpg",
+    "width": 2000,
+    "height": 1312,
+    "blurDataURL": "data:image/webp;base64,UklGRlAAAABXRUJQVlA4IEQAAADwAQCdASoQAAoAA4BaJZQAD43xec/wngAA/viT7Qw019G9PTnYgJ6FJgkMn0j7lK3rEZ73dIAJXvvKrMf8Uwy5NAAAAA==",
+    "credit": {
+      "author": "Petar Milošević",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Human_running_gait_-_terminal_swing_to_heel_strike_(runner_with_Asics_Metaspeed_Edge_Paris_-_2024_Ljubljana_Marathon).jpg"
+    }
+  },
+  "aro": {
+    "src": "/images/demo/aro.jpg",
+    "width": 2000,
+    "height": 1500,
+    "blurDataURL": "data:image/webp;base64,UklGRlwAAABXRUJQVlA4IFAAAADwAQCdASoQAAwAA4BaJbACdADjfv52mYAA/Zy5pgg4MuLE6TdVpuKcOIyQ2BlDug6teaUPR6gLRFPNH/XZmwqHmDq2Bm0WfZRkcz+5heAAAA==",
+    "credit": {
+      "author": "Ermell",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Basketball_hoop_1210388.jpg"
+    }
+  },
+  "calor": {
+    "src": "/images/demo/calor.jpg",
+    "width": 2000,
+    "height": 1168,
+    "blurDataURL": "data:image/webp;base64,UklGRkQAAABXRUJQVlA4IDgAAADQAQCdASoQAAkAA4BaJQBOgCHes0PbcAD+1O7cCLdaj743gM3fP39M/B/aXjcIvCO4cQ2e03oAAA==",
+    "credit": {
+      "author": "MohammedSuman22",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:City_in_the_Haze.jpg"
+    }
+  },
+  "aula": {
+    "src": "/images/demo/aula.jpg",
+    "width": 2000,
+    "height": 1329,
+    "blurDataURL": "data:image/webp;base64,UklGRnQAAABXRUJQVlA4IGgAAAAQAgCdASoQAAsAA4BaJaACdADbW/C5CScgAP7Aej6YICrrlyzJ02PB32ZIcuvdSXD0XaM5v1XjSz6ef+b7/kn/qhevbd1CV1d3lA5MiHUeDTIKYooQGZLPFpIH6jspTo+eRvFtWT84AA==",
+    "credit": {
+      "author": "Marie-Lan Nguyen",
+      "license": "CC BY 2.5",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.5",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Grande_salle_ENC_n1.jpg"
+    }
+  },
+  "terminal": {
+    "src": "/images/demo/terminal.jpg",
+    "width": 2000,
+    "height": 1335,
+    "blurDataURL": "data:image/webp;base64,UklGRlYAAABXRUJQVlA4IEoAAABwAgCdASoQAAsAA4BaJagCdGuAAs2X14upijIAAP6mwrMmCN1B72Sur7/hr0CU/FAbyUfx712O5ByiOuvvSFjOywvL1wcUCL5gAA==",
+    "credit": {
+      "author": "Arild Vågen",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Slussen_February_2017_01.jpg"
+    }
+  },
+  "escritorio": {
+    "src": "/images/demo/escritorio.jpg",
+    "width": 2000,
+    "height": 1500,
+    "blurDataURL": "data:image/webp;base64,UklGRlgAAABXRUJQVlA4IEwAAABQAgCdASoQAAwAA4BaJZQC7AYs32tkMeQPnQAA/olJJLNCWzg69jUtJrmli24pKKZjS/44/pQ1qiFpVwbcuIvSerx+iIZg5BGhAUAA",
+    "credit": {
+      "author": "Autor desconocido",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Desktop_with_laptop_and_calculator_(Unsplash).jpg"
+    }
+  },
+  "cafe": {
+    "src": "/images/demo/cafe.jpg",
+    "width": 2000,
+    "height": 1333,
+    "blurDataURL": "data:image/webp;base64,UklGRnIAAABXRUJQVlA4IGYAAAAQAgCdASoQAAsAA4BaJQBOgMV4oaaMUM9gAP7qKEpIr52x1N5++eR+3NDkRXDVfu9CvEiKtnyM9L/QykRaBlkP6ZXwT+s/JpHWEXekU9GuXpVqFsmlwNwIxXRZPdnXhfYDv+8kAAA=",
+    "credit": {
+      "author": "Shixart1985",
+      "license": "CC BY 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Barista_prepares_espresso_at_coffee_shop.jpg"
+    }
+  },
+  "bicicleta": {
+    "src": "/images/demo/bicicleta.jpg",
+    "width": 2000,
+    "height": 1500,
+    "blurDataURL": "data:image/webp;base64,UklGRmIAAABXRUJQVlA4IFYAAAAQAgCdASoQAAwAA4BaJbACdAEfQEwRx+IAAP70oQcENnxH9xLFbO2jX1phSYWKXei/JPxOSTBGXM2QimBgYMCFArd1FZDAH7lucpnfEurmyQiYE80AAA==",
+    "credit": {
+      "author": "Jim.henderson",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Nite_bike_commuters_Tillary_St_jeh.jpg"
+    }
+  },
+  "balcones": {
+    "src": "/images/demo/balcones.jpg",
+    "width": 2000,
+    "height": 1500,
+    "blurDataURL": "data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAADQAQCdASoQAAwAA4BaJYwC7AEQarMcAAD+22sX3umTEmVG88GHlipbvBXXQOvcY66cSZGf6ll4B+c9kyARtTNYIAA=",
+    "credit": {
+      "author": "Fons Heijnsbroek",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:A_view_on_green_back-gardens_and_shadows_of_trees_between_HoogteKadijk_and_Laagtekadijk,_Amsterdam;_FotoDutch,_May_2013.jpg"
+    }
+  },
+  "tocadiscos": {
+    "src": "/images/demo/tocadiscos.jpg",
+    "width": 2000,
+    "height": 1334,
+    "blurDataURL": "data:image/webp;base64,UklGRmIAAABXRUJQVlA4IFYAAADwAQCdASoQAAsAA4BaJZwAAugz3KEFSAAA/uirEaT0t5HtREc34+CR2ZGirDP9XAG5dX3yjldDli2CtEst9MgePqmM2kT5gTN2XI9df08njfrm+oAAAA==",
+    "credit": {
+      "author": "Franz van Duns",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Technics_SL-120_turntable_and_pickup_-_front_view_(2019-04-28).jpg"
+    }
+  }
+}

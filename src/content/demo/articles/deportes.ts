@@ -1,0 +1,106 @@
+import type { DemoSpec } from '../builder';
+
+export const deportes: DemoSpec[] = [
+  {
+    slug: 'final-copa-regional-definicion-penales',
+    title: 'Atlético Ribera ganó la copa regional en una final que se definió por penales',
+    dek: 'Empató 1 a 1 con Sportivo Las Acacias en los noventa minutos y se impuso 4 a 3 en la definición. Es su primer título en dos décadas.',
+    category: 'deportes',
+    tags: ['Fútbol', 'Ascenso', 'Copa regional'],
+    image: 'estadio',
+    minutesAgo: 840,
+    priority: 3,
+    status: 'verified',
+    sources: [
+      ['radio-local', 'Relato y resultado del partido.'],
+      ['organismo', 'Planilla oficial de la liga.'],
+      ['diario-regional', 'Crónica del partido.'],
+    ],
+    claims: [
+      { text: 'El partido terminó 1 a 1 y Atlético Ribera ganó 4 a 3 por penales.', status: 'confirmed', sources: ['radio-local', 'organismo', 'diario-regional'] },
+    ],
+    body: [
+      { type: 'p', text: 'Atlético Ribera se quedó con la copa regional al vencer por penales a Sportivo Las Acacias, después de un empate 1 a 1 en los noventa minutos. Es el primer título del club en veinte años, según la planilla oficial de la liga.' },
+      { type: 'p', text: 'Las Acacias se adelantó en el primer tiempo con un cabezazo tras un córner y Ribera lo empató a los veinte minutos del complemento. En la definición, el arquero de Ribera atajó el cuarto penal y el quinto lo convirtió el capitán.' },
+      { type: 'p', text: 'Con el título, Ribera obtiene un lugar en el torneo interregional del año próximo. La liga confirmó que el partido de entrega de medallas será el domingo.' },
+    ],
+  },
+  {
+    slug: 'clubes-ascenso-cuentas-que-no-cierran',
+    title: 'El fútbol de ascenso y una cuenta que no cierra',
+    dek: 'Los clubes chicos dependen cada vez más de la venta de jugadores jóvenes. Es un modelo que funciona mientras alguien compre.',
+    category: 'deportes',
+    type: 'analisis',
+    tags: ['Fútbol', 'Ascenso', 'Clubes'],
+    image: 'tribuna',
+    minutesAgo: 2880,
+    priority: 2,
+    status: 'verified',
+    sources: [
+      ['informe-tecnico', 'Balances presentados por los clubes ante la liga.'],
+      ['diario-regional', 'Testimonios de dirigentes.'],
+    ],
+    body: [
+      { type: 'note', tone: 'context', title: 'Este texto es un análisis', text: 'Interpreta los balances citados. Las conclusiones son de la redacción.' },
+      { type: 'p', text: 'Los balances que los clubes de ascenso presentan ante la liga muestran un patrón: los ingresos por cuotas sociales y entradas no alcanzan a cubrir los gastos del plantel, y la diferencia se compensa con la venta de jugadores formados en las divisiones inferiores.' },
+      { type: 'p', text: 'El modelo tiene una lógica, porque formar jugadores es lo que estos clubes hacen mejor. Pero vuelve a las instituciones dependientes de un mercado que no controlan: un año sin ventas puede comprometer el funcionamiento de todo el club, incluidas las actividades sociales que no tienen nada que ver con el fútbol profesional.' },
+      { type: 'p', text: 'La discusión que falta es cómo diversificar esos ingresos sin perder el carácter social de los clubes, que es lo que los distingue.' },
+    ],
+  },
+  {
+    slug: 'maraton-urbana-record-inscriptos',
+    title: 'La maratón urbana de primavera cerró la inscripción con un récord de corredores',
+    dek: 'La organización amplió los horarios de largada para evitar aglomeraciones. Habrá cortes de calles desde la madrugada.',
+    category: 'deportes',
+    tags: ['Atletismo', 'Running', 'Ciudades'],
+    image: 'maraton',
+    minutesAgo: 1560,
+    priority: 2,
+    status: 'verified',
+    sources: [
+      ['organismo', 'Cronograma de cortes de tránsito.'],
+      ['radio-local', 'Datos de inscripción informados por la organización.'],
+    ],
+    body: [
+      { type: 'p', text: 'La maratón urbana de primavera cerró la inscripción con la mayor cantidad de corredores de su historia, según la organización. Para evitar aglomeraciones, la largada se hará en cuatro tandas separadas por diez minutos.' },
+      { type: 'p', text: 'El organismo de tránsito publicó el cronograma de cortes: las calles del recorrido estarán cerradas desde las cinco de la mañana y se habilitarán por tramos a medida que pase el último corredor.' },
+    ],
+  },
+  {
+    slug: 'basquet-clubes-barrio-ligas-formativas',
+    title: 'El básquet de los clubes de barrio crece en las categorías formativas',
+    dek: 'Las ligas infantiles sumaron equipos por tercer año consecutivo. El límite ahora es la cantidad de canchas techadas.',
+    category: 'deportes',
+    tags: ['Básquet', 'Clubes', 'Deporte infantil'],
+    image: 'aro',
+    minutesAgo: 2280,
+    priority: 2,
+    status: 'verified',
+    sources: [
+      ['organismo', 'Registro de equipos inscriptos en las ligas formativas.'],
+      ['diario-regional', 'Situación de la infraestructura de los clubes.'],
+    ],
+    body: [
+      { type: 'p', text: 'Las ligas formativas de básquet de clubes de barrio sumaron equipos por tercer año consecutivo, según el registro de la federación regional. El crecimiento se concentra en las categorías de menores de once y trece años.' },
+      { type: 'p', text: 'Los dirigentes coinciden en que el límite ya no es la cantidad de chicos interesados, sino la de canchas techadas: varios clubes entrenan en horarios nocturnos o comparten espacio con otras disciplinas.' },
+    ],
+  },
+  {
+    slug: 'sorteo-fixture-copa-clubes-barrio',
+    title: 'Se sorteó el fixture de la copa de clubes de barrio',
+    dek: 'Treinta y dos equipos jugarán desde noviembre.',
+    category: 'deportes',
+    type: 'breve',
+    tags: ['Fútbol', 'Clubes'],
+    minutesAgo: 70,
+    priority: 2,
+    status: 'verified',
+    sources: [
+      ['organismo', 'Resultado oficial del sorteo.'],
+      ['radio-local', 'Transmisión del sorteo.'],
+    ],
+    body: [
+      { type: 'p', text: 'La liga sorteó el fixture de la copa de clubes de barrio, que reunirá a treinta y dos equipos desde noviembre. La primera fase se jugará en grupos de cuatro y la final está prevista para marzo.' },
+    ],
+  },
+];

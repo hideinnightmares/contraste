@@ -1,0 +1,86 @@
+# Arma el sitio estático y lo publica en Cloudflare. Ver docs/DESPLIEGUE.md, "Publicación automática".
+#
+# Cuándo corre:
+# - push a main: cambios de código.
+# - repository_dispatch "publicar": una nota aprobada (lo dispara la mesa de redacción).
+# - todos los días a las 00:07 de Buenos Aires: rearma la portada y las etiquetas "Hoy"/"Ayer".
+# - a mano, desde la pestaña Actions.
+#
+# Cupo: los repositorios privados tienen 2.000 minutos gratis por mes. Cada armado gasta unos
+# 2 minutos facturados. Las publicaciones automáticas se cortan al llegar a
+# CONTRASTE_MAX_PUBLICACIONES_DIARIAS (variable del repositorio; 15 si no está definida). Lo que
+# se apruebe después sale en el armado diario de medianoche: nada se pierde.
+name: Publicar el sitio
+
+on:
+  push:
+    branches: [main]
+  repository_dispatch:
+    types: [publicar]
+  schedule:
+    - cron: '7 3 * * *'
+  workflow_dispatch:
+
+# Un armado a la vez. Si llegan varias aprobaciones mientras uno corre, queda uno solo en espera
+# (el más nuevo) y publica todas juntas.
+concurrency:
+  group: publicar
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Controlar el cupo diario de publicaciones automáticas
+        id: cupo
+        if: github.event_name == 'repository_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MAXIMO: ${{ vars.CONTRASTE_MAX_PUBLICACIONES_DIARIAS || 15 }}
+        run: |
+          # Medianoche de Buenos Aires en UTC. Argentina no cambia la hora: UTC-3 fijo, sin depender de tzdata.
+          desde=$(date -u -d "@$(TZ='<-03>3' date -d 'today 00:00' +%s)" +%Y-%m-%dT%H:%M:%SZ)
+          hechas=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow publicar.yml --event repository_dispatch \
+            --status success --created ">=$desde" --limit 200 --json databaseId --jq length)
+          echo "Publicaciones automáticas de hoy: $hechas de $MAXIMO."
+          if [ "$hechas" -ge "$MAXIMO" ]; then
+            echo "omitir=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Cupo diario alcanzado ($MAXIMO). Lo aprobado sale en el armado de medianoche."
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.cupo.outputs.omitir != 'true'
+
+      - uses: actions/setup-node@v7
+        if: steps.cupo.outputs.omitir != 'true'
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        if: steps.cupo.outputs.omitir != 'true'
+        run: npm ci
+
+      # Versiones de fotos ya generadas en armados anteriores (scripts/postbuild.ts).
+      - uses: actions/cache@v6
+        if: steps.cupo.outputs.omitir != 'true'
+        with:
+          path: .cache/img
+          key: fotos-${{ hashFiles('public/images/**', 'src/config/images.ts') }}
+          restore-keys: fotos-
+
+      - name: Armar el sitio
+        if: steps.cupo.outputs.omitir != 'true'
+        run: npm run build
+
+      - name: Publicar en Cloudflare
+        if: steps.cupo.outputs.omitir != 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy

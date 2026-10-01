@@ -1,0 +1,28 @@
+/* Marca "Demo" en cada tarjeta: discreta pero inequívoca, sin competir con la sección. */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 1.25rem;
+  padding: 0 0.4rem;
+  border: 1px solid currentColor;
+  color: var(--ink-3);
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+
+/* Aviso al comienzo de cada nota ficticia. */
+.notice {
+  padding: var(--space-4) var(--space-5);
+  border-left: 6px solid var(--highlight);
+  background: var(--mist);
+  font-size: var(--fs-ui);
+  line-height: 1.55;
+}
+
+.notice strong {
+  color: var(--ink);
+  font-weight: 800;
+}

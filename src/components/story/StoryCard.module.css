@@ -1,0 +1,310 @@
+.card {
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.body {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  font-size: var(--fs-meta);
+  line-height: 1.2;
+}
+
+.section {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* En las notas grandes, la sección va como etiqueta de resaltador. */
+.lead .section,
+.wide .section,
+.overlay .section {
+  padding: 0.2rem 0.45rem;
+  background: var(--highlight);
+  color: var(--on-highlight);
+  font-weight: 800;
+}
+
+.type {
+  font-weight: 500;
+  color: var(--ink-2);
+  font-style: italic;
+  font-family: var(--font-serif);
+  font-size: 0.9375rem;
+}
+
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.pulse {
+  position: relative;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2.4s var(--ease-out) infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  70%,
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+/*
+ * Dos voces de titular, como en una revista: los titulares grandes van en la
+ * serif de display (angosta, peso 400); los chicos, en la sans en negrita.
+ */
+.headline {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-variation-settings: var(--compact-width);
+  letter-spacing: -0.01em;
+  line-height: 1.18;
+  text-wrap: balance;
+  color: var(--ink);
+}
+
+.lead .headline,
+.wide .headline,
+.overlay .headline,
+.size-m.standard .headline,
+.size-m.text .headline,
+.card[data-type='analisis'] .headline {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-variation-settings: var(--display-width);
+  font-weight: var(--display-weight);
+  letter-spacing: -0.01em;
+  line-height: 0.98;
+}
+
+/* El análisis se distingue de la noticia: titular completo en cursiva. */
+.card[data-type='analisis'] .headline {
+  font-style: italic;
+}
+
+.dek {
+  max-width: 40rem;
+  font-family: var(--font-serif);
+  font-size: var(--fs-dek);
+  line-height: 1.45;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.standard .dek {
+  font-size: 1.125rem;
+}
+
+.size-s .dek,
+.text .dek {
+  font-size: 1.0625rem;
+  line-height: 1.5;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+  margin-top: 0.15rem;
+  font-size: var(--fs-meta);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Principal: el titular más grande del sitio, con la foto entrando partida desde el centro. */
+.lead {
+  gap: var(--space-5);
+}
+
+.lead .headline {
+  font-size: var(--fs-h-xl);
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+}
+
+.lead .dek {
+  font-size: clamp(1.1875rem, 1.05rem + 0.6vw, 1.5rem);
+  max-width: 44rem;
+}
+
+.lead .image {
+  animation: split-reveal var(--dur-reveal) var(--ease-in-out) both;
+}
+
+.lead .body {
+  animation: rise 800ms var(--ease-out) 380ms both;
+}
+
+@keyframes split-reveal {
+  from {
+    clip-path: inset(0 50% 0 50%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* Ancha: foto a la izquierda, texto a la derecha. */
+.wide .headline {
+  font-size: var(--fs-h-l);
+  line-height: 1.02;
+}
+
+@media (min-width: 48rem) {
+  .wide {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: var(--column-gap);
+    align-items: start;
+  }
+}
+
+.standard .headline {
+  font-size: var(--fs-h-m);
+}
+
+.size-s.wide .headline {
+  font-size: var(--fs-h-m);
+  line-height: 1.06;
+}
+
+.size-s.standard .headline,
+.size-s.text .headline {
+  font-size: var(--fs-h-s);
+}
+
+.card[data-type='analisis'].size-s .headline {
+  font-size: calc(var(--fs-h-s) * 1.18);
+  line-height: 1.12;
+}
+
+.text .headline {
+  font-size: var(--fs-h-m);
+}
+
+/* Compacta: titular con miniatura a la derecha, para listas. */
+.compact {
+  grid-template-columns: minmax(0, 1fr) 5.5rem;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.compact .image {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.compact .body {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.compact .headline {
+  font-size: var(--fs-h-xs);
+  line-height: 1.28;
+}
+
+/* Sobre foto: titular sobre la imagen, para secciones visuales. */
+.overlay {
+  position: relative;
+  gap: 0;
+  color: #fff;
+  border-radius: var(--radius-photo);
+  overflow: hidden;
+}
+
+.overlay .image {
+  aspect-ratio: 21 / 9 !important;
+  border-radius: 0;
+}
+
+.overlay .image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.86) 0%, rgb(0 0 0 / 0.55) 38%, rgb(0 0 0 / 0) 70%);
+}
+
+.overlay .body {
+  text-shadow: 0 1px 12px rgb(0 0 0 / 0.45);
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: clamp(1.25rem, 4vw, 3rem);
+  max-width: 54rem;
+}
+
+.overlay .headline {
+  color: #fff;
+  font-size: var(--fs-h-l);
+  line-height: 1.02;
+}
+
+.overlay .dek,
+.overlay .meta {
+  color: rgb(255 255 255 / 0.86);
+}
+
+.overlay .live {
+  color: #fff;
+}
+
+.overlay .type {
+  color: rgb(255 255 255 / 0.86);
+}
+
+.overlay .meta :global(*) {
+  color: rgb(255 255 255 / 0.86);
+}
+
+@media (max-width: 47.99rem) {
+  .overlay .image {
+    aspect-ratio: 4 / 5 !important;
+  }
+
+  .overlay .headline {
+    font-size: var(--fs-h-m);
+  }
+
+  .overlay .dek {
+    display: none;
+  }
+}

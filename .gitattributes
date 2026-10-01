@@ -1,0 +1,8 @@
+# Finales de línea LF en el repositorio (GitHub Actions corre en Linux); git los adapta al sistema al hacer checkout.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.woff2 binary

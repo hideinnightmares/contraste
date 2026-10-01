@@ -1,0 +1,75 @@
+import type { DemoSpec } from '../builder';
+
+export const politica: DemoSpec[] = [
+  {
+    slug: 'votaciones-legislativas-datos-abiertos-comision',
+    title: 'Un proyecto para publicar todas las votaciones legislativas en formato abierto supera su primer paso en comisión',
+    dek: 'La iniciativa obliga a publicar cada votación nominal en un formato que cualquiera pueda descargar y analizar. Tiene dictamen de comisión; falta el debate en el recinto.',
+    category: 'politica',
+    tags: ['Datos abiertos', 'Transparencia', 'Legislatura'],
+    image: 'parlamento',
+    minutesAgo: 360,
+    priority: 4,
+    status: 'verified',
+    sources: [
+      ['boletin-oficial', 'Texto del proyecto y del dictamen.'],
+      ['agencia-nacional', 'Desarrollo de la reunión de comisión.'],
+      ['replica-agencia', 'Réplica del cable de la agencia nacional; no cuenta como fuente independiente.'],
+      ['diario-regional', 'Posiciones de los bloques.'],
+    ],
+    claims: [
+      { text: 'El proyecto obtuvo dictamen de comisión.', status: 'confirmed', sources: ['boletin-oficial', 'agencia-nacional', 'diario-regional'] },
+      { text: 'Será tratado en el recinto antes de fin de año.', status: 'unconfirmed', sources: ['diario-regional'] },
+    ],
+    body: [
+      { type: 'p', text: 'La comisión de Asuntos Constitucionales firmó dictamen favorable a un proyecto que obliga a publicar cada votación nominal de la Legislatura en un formato abierto, es decir, descargable y legible por programas, además de la versión en PDF que se publica hoy.' },
+      { type: 'p', text: 'El texto fija un plazo de 48 horas para publicar los resultados de cada votación, con el detalle de cómo votó cada legisladora y legislador, y exige que los datos históricos de los últimos diez años se carguen en el mismo formato.' },
+      { type: 'h2', text: 'Qué sigue' },
+      { type: 'p', text: 'Con el dictamen, el proyecto queda en condiciones de ser tratado en el recinto. Los bloques que lo firmaron aspiran a debatirlo antes de fin de año, pero la fecha depende de la agenda que acuerde la comisión de Labor Parlamentaria, y no hay una sesión convocada.' },
+      { type: 'note', tone: 'context', title: 'Sobre las fuentes', text: 'Una de las fuentes listadas replica el cable de la agencia nacional. La mostramos por transparencia, pero no la contamos como una confirmación independiente.' },
+    ],
+  },
+  {
+    slug: 'voto-electronico-que-resolveria-y-que-no',
+    title: 'Voto electrónico: qué resolvería y qué no un cambio de sistema',
+    dek: 'El debate suele plantearse entre modernidad y atraso. Las preguntas que importan son otras: quién puede auditar el sistema y cómo se cuenta un voto si algo falla.',
+    category: 'politica',
+    type: 'analisis',
+    tags: ['Elecciones', 'Voto electrónico', 'Transparencia'],
+    image: 'urna',
+    minutesAgo: 1200,
+    priority: 3,
+    status: 'verified',
+    sources: [
+      ['informe-tecnico', 'Informe técnico sobre auditoría de sistemas de votación.'],
+      ['universidad', 'Investigación comparada sobre sistemas electorales.'],
+    ],
+    body: [
+      { type: 'note', tone: 'context', title: 'Este texto es un análisis', text: 'Interpreta hechos documentados en las fuentes citadas. Las conclusiones son de la redacción y se distinguen de la información.' },
+      { type: 'p', text: 'Cada vez que se discute cambiar el sistema de votación, la conversación se ordena en dos bandos: quienes ven en la urna de cartón un resabio del pasado y quienes desconfían de cualquier pantalla. Esa división esconde lo que de verdad define si un sistema es bueno.' },
+      { type: 'h2', text: 'La pregunta de la auditoría' },
+      { type: 'p', text: 'Un sistema de votación tiene que permitir que personas sin conocimientos técnicos verifiquen que el resultado es correcto. La boleta de papel lo logra con fiscales que cuentan a la vista. Un sistema electrónico necesita mecanismos equivalentes, como un comprobante en papel que pueda recontarse, y el informe técnico consultado coincide en que sin ese respaldo la auditoría depende de muy pocos especialistas.' },
+      { type: 'h2', text: 'Lo que un cambio no resuelve' },
+      { type: 'p', text: 'Muchos de los problemas que se atribuyen al sistema de votación (el robo de boletas, la demora del escrutinio, la desconfianza en los resultados) tienen soluciones que no requieren tecnología nueva: boleta única, más fiscalización, publicación rápida de las actas. Un cambio de sistema puede ayudar con algunos de ellos, pero no con todos, y agrega riesgos propios.' },
+      { type: 'p', text: 'Lo que convendría discutir no es papel o pantalla, sino qué garantías de control ciudadano exige cada opción, y cuánto cuesta sostenerlas.' },
+    ],
+  },
+  {
+    slug: 'comision-acceso-informacion-especialistas',
+    title: 'La comisión de Asuntos Constitucionales recibirá a especialistas en acceso a la información',
+    dek: 'Será la semana próxima, como parte del tratamiento de cambios a la ley vigente.',
+    category: 'politica',
+    type: 'breve',
+    tags: ['Transparencia', 'Legislatura'],
+    minutesAgo: 300,
+    priority: 2,
+    status: 'verified',
+    sources: [
+      ['organismo', 'Agenda oficial de reuniones de comisión.'],
+      ['agencia-nacional', 'Lista de expositores invitados.'],
+    ],
+    body: [
+      { type: 'p', text: 'La comisión de Asuntos Constitucionales recibirá la semana próxima a especialistas en acceso a la información pública, como parte del tratamiento de dos proyectos que proponen cambios a la ley vigente. La reunión será abierta y se transmitirá por el canal oficial de la Legislatura.' },
+    ],
+  },
+];

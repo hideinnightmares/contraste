@@ -1,0 +1,83 @@
+.article,
+.list {
+  padding-block: var(--space-7);
+}
+
+.article {
+  max-width: calc(52rem + var(--gutter) * 2);
+}
+
+.stack {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.bone {
+  display: block;
+  border-radius: 0;
+  background: linear-gradient(90deg, var(--mist) 0%, var(--mist-strong) 45%, var(--mist) 90%);
+  background-size: 220% 100%;
+  animation: shimmer 1.3s linear infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+.kicker {
+  width: 6rem;
+  height: 0.9rem;
+}
+
+.title {
+  height: clamp(2.2rem, 1.6rem + 2.6vw, 3.6rem);
+}
+
+.short {
+  width: 64%;
+}
+
+.line {
+  height: 1rem;
+}
+
+.mid {
+  width: 78%;
+}
+
+.hero {
+  aspect-ratio: 16 / 9;
+  margin-block: var(--space-4);
+}
+
+.pageTitle {
+  width: min(28rem, 70%);
+  height: clamp(2.6rem, 1.6rem + 4.6vw, 5.5rem);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 12rem;
+  gap: var(--space-5);
+  padding-block: var(--space-5);
+  border-top: 1px solid var(--rule);
+}
+
+.rowTitle {
+  height: 1.8rem;
+}
+
+.thumb {
+  aspect-ratio: 4 / 3;
+}
+
+@media (max-width: 47.99rem) {
+  .row {
+    grid-template-columns: minmax(0, 1fr) 5.5rem;
+  }
+}

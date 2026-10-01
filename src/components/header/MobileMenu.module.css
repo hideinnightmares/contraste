@@ -1,0 +1,170 @@
+.trigger {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 0.85rem 0 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font-weight: 500;
+  transition: border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+
+.trigger:hover {
+  border-color: var(--ink);
+}
+
+.trigger:active {
+  transform: scale(0.96);
+}
+
+@media (max-width: 63.99rem) {
+  .trigger {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .trigger {
+    width: 2.75rem;
+    padding: 0;
+    justify-content: center;
+    border-radius: var(--radius-round);
+  }
+
+  .triggerText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+.dialog {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: var(--space-4) var(--gutter) var(--space-6);
+  border: 0;
+  background: var(--paper);
+  color: var(--ink);
+  overflow-y: auto;
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease-out), overlay var(--dur-base) allow-discrete,
+    display var(--dur-base) allow-discrete;
+}
+
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+}
+
+@starting-style {
+  .dialog[open] {
+    opacity: 0;
+  }
+}
+
+.dialog::backdrop {
+  background: transparent;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 3rem;
+}
+
+.title {
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: transparent;
+}
+
+.sections {
+  margin-top: var(--space-4);
+}
+
+.sections li {
+  border-bottom: 1px solid var(--rule);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 420ms var(--ease-out), transform 420ms var(--ease-out);
+  transition-delay: calc(var(--i) * 28ms + 60ms);
+}
+
+.dialog[open] .sections li {
+  opacity: 1;
+  transform: none;
+}
+
+@starting-style {
+  .dialog[open] .sections li {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.section {
+  display: flex;
+  align-items: center;
+  min-height: 3.5rem;
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-width);
+  font-size: clamp(1.75rem, 1.4rem + 1.6vw, 2.25rem);
+  font-weight: var(--display-weight);
+  letter-spacing: -0.02em;
+  transition: color var(--dur-fast) var(--ease-out), transform var(--dur-base) var(--ease-out);
+}
+
+.section:hover {
+  transform: translateX(4px);
+}
+
+.section[aria-current='page'] {
+  color: var(--accent);
+}
+
+.secondary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-top: auto;
+  padding-top: var(--space-6);
+}
+
+.links {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.links a:hover {
+  color: var(--ink);
+}

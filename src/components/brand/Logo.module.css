@@ -1,0 +1,42 @@
+.logo {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.28em;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-width);
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.bar {
+  font-size: 2rem;
+}
+
+.large {
+  font-size: clamp(2.5rem, 1.6rem + 3vw, 4rem);
+}
+
+.mark {
+  flex: none;
+  width: 0.78em;
+  height: 0.78em;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+.logo:hover .mark {
+  transform: rotate(180deg);
+}
+
+.word {
+  display: block;
+  padding-bottom: 0.04em;
+}
+
+@media (max-width: 47.99rem) {
+  .bar {
+    font-size: 1.75rem;
+  }
+}

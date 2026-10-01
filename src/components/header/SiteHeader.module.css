@@ -1,0 +1,152 @@
+.header {
+  --topbar-height: 2.5rem;
+  position: sticky;
+  top: calc(var(--topbar-height) * -1);
+  z-index: 50;
+}
+
+/* Franja superior negra */
+.topbar {
+  height: var(--topbar-height);
+  font-size: var(--fs-meta);
+}
+
+.topbarInner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  height: 100%;
+}
+
+.date {
+  flex: none;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.demo {
+  flex: 1;
+  min-width: 0;
+}
+
+.demo p {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-2);
+}
+
+.demo strong {
+  color: var(--highlight);
+  font-weight: 700;
+}
+
+.demoLink {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--highlight);
+  text-underline-offset: 0.2em;
+}
+
+.topActions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.topLink {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.topLink:hover {
+  color: var(--ink);
+}
+
+.topActions :global(button) {
+  min-height: 2rem;
+  border-color: var(--rule);
+}
+
+/* Barra fija */
+.bar {
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.barInner {
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 2vw, 2rem);
+  height: var(--header-height);
+}
+
+.menu {
+  display: none;
+}
+
+.actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.subscribe {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 1.1rem;
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 700;
+  font-size: var(--fs-ui);
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.subscribe:hover {
+  background: var(--highlight);
+  color: var(--on-highlight);
+}
+
+.subscribe:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 63.99rem) {
+  .menu {
+    display: flex;
+  }
+
+  .subscribe {
+    display: none;
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .header {
+    --topbar-height: 2.25rem;
+  }
+
+  .date,
+  .topLink {
+    display: none;
+  }
+
+  .topbarInner {
+    gap: var(--space-3);
+  }
+
+  .barInner {
+    justify-content: space-between;
+    height: 3.75rem;
+  }
+
+  .actions {
+    margin-left: 0;
+  }
+}
