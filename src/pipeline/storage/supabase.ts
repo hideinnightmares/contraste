@@ -18,9 +18,10 @@ const PAGE = 1000;
 
 /** Cliente con la clave secreta, o `null` si el pipeline no tiene base configurada. */
 export function supabaseFromEnv(env: Record<string, string | undefined> = process.env): SupabaseClient | null {
-  const url = env.SUPABASE_URL?.trim();
   const key = env.SUPABASE_SECRET_KEY?.trim();
-  if (!url && !key) return null;
+  if (!env.SUPABASE_URL?.trim() && !key) return null;
+  // La dirección no es secreta: si .env.pipeline no la trae, sirve la del sitio (.env.production).
+  const url = (env.SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL)?.trim();
   if (!url || !key) {
     throw new Error('Falta SUPABASE_URL o SUPABASE_SECRET_KEY en .env.pipeline: hacen falta las dos para guardar en la base.');
   }

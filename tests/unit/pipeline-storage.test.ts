@@ -104,6 +104,10 @@ describe('almacenamiento en Supabase', () => {
       /sb_secret_/,
     );
     expect(supabaseFromEnv({ SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SECRET_KEY: 'sb_secret_prueba' })).not.toBeNull();
+    // La dirección pública del sitio (.env.production) sirve si .env.pipeline solo trae la clave,
+    // pero por sí sola no activa la base.
+    expect(supabaseFromEnv({ NEXT_PUBLIC_SUPABASE_URL: 'https://x.supabase.co' })).toBeNull();
+    expect(supabaseFromEnv({ NEXT_PUBLIC_SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SECRET_KEY: 'sb_secret_prueba' })).not.toBeNull();
   });
 });
 

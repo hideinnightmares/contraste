@@ -114,7 +114,11 @@ export async function listDrafts(statuses: ReviewStatus[]): Promise<DraftRow[]> 
   }));
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function loadDraft(id: string): Promise<LoadedDraft | null> {
+  // Una dirección mal copiada no es un error de la base: esa nota no existe.
+  if (!UUID.test(id)) return null;
   const { data, error } = await browserSupabase().from('articles').select('id, updated_at, writer, document').eq('id', id).maybeSingle();
   if (error) throw deskError(error);
   if (!data) return null;
@@ -134,7 +138,10 @@ export async function saveDraft(id: string, expectedUpdatedAt: string, article: 
     .select('id, updated_at, writer, document');
   if (error) throw deskError(error);
   if (!data || data.length === 0) {
-    throw new DeskError('La nota cambió desde que la abriste (otra pestaña o el pipeline). Recargala para ver la última versión.', 'conflict');
+    throw new DeskError(
+      'La nota cambió desde que la abriste (en otra pestaña, otra persona o el pipeline) y no se guardó nada, para no pisar esos cambios. Copiá lo que quieras conservar y recargala para ver la última versión.',
+      'conflict',
+    );
   }
   const row = data[0];
   return { id: row.id, updatedAt: row.updated_at, writer: row.writer, article: row.document as Article };

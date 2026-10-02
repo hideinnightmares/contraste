@@ -66,6 +66,10 @@
   margin-top: var(--space-5);
 }
 
+.spacedSmall {
+  margin-top: var(--space-3);
+}
+
 .lead {
   margin-top: var(--space-3);
   max-width: 44rem;
@@ -116,7 +120,7 @@
 .primary:disabled,
 .publish:disabled,
 .danger:disabled {
-  cursor: progress;
+  cursor: default;
   opacity: 0.6;
 }
 
@@ -176,6 +180,18 @@
 .input[aria-invalid='true'],
 .textarea[aria-invalid='true'] {
   border-color: var(--disputed);
+}
+
+.fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fieldset > legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
 }
 
 .row {
@@ -289,11 +305,46 @@
 
 /* Editor */
 
+.editorHeading {
+  margin-top: var(--space-4);
+  font-family: var(--font-display);
+  font-variation-settings: var(--compact-width);
+  font-weight: 700;
+  font-size: var(--fs-h-s);
+}
+
+.titleInput {
+  font-family: var(--font-display);
+  font-variation-settings: var(--compact-width);
+  font-weight: 700;
+  font-size: var(--fs-h-s);
+  line-height: 1.25;
+}
+
+.confirmText {
+  flex-basis: 100%;
+  max-width: 48rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
 .editor {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 20rem;
   gap: var(--space-7);
   margin-top: var(--space-5);
+}
+
+/* Los paneles van primero en el documento (en el teléfono se leen antes de editar) y a la
+   derecha en pantallas anchas. */
+.editor > .side {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.editor > form {
+  grid-column: 1;
+  grid-row: 1;
 }
 
 .side {
@@ -368,6 +419,12 @@
 @media (max-width: 63.99rem) {
   .editor {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .editor > .side,
+  .editor > form {
+    grid-column: 1;
+    grid-row: auto;
   }
 }
 

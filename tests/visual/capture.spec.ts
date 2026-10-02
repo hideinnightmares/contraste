@@ -1,4 +1,4 @@
-import { test, devices } from '@playwright/test';
+import { test, devices, type Browser, type Page } from '@playwright/test';
 
 const OUT = 'test-results/capturas';
 
@@ -75,4 +75,41 @@ test('movil', async ({ browser }) => {
   await settle(page);
   await page.screenshot({ path: `${OUT}/13-movil-nota.png`, fullPage: true });
   await ctx.close();
+});
+
+test('mesa de redacción', async ({ browser }) => {
+  const { EDITOR, FakeSupabase } = await import('../e2e/supabase-mock');
+  const shoot = async (options: Parameters<Browser['newContext']>[0], name: string, steps: (page: Page) => Promise<void>) => {
+    const ctx = await browser.newContext({ locale: 'es-AR', timezoneId: 'America/Argentina/Buenos_Aires', ...options });
+    const page = await ctx.newPage();
+    await new FakeSupabase().install(page);
+    await page.goto('/redaccion');
+    await page.screenshot({ path: `${OUT}/${name}-ingreso.png` });
+    await page.getByLabel('Email').fill(EDITOR.email);
+    await page.getByLabel('Contraseña').fill(EDITOR.password);
+    await page.getByRole('button', { name: 'Entrar' }).click();
+    await page.getByRole('heading', { name: 'Notas' }).waitFor();
+    await steps(page);
+    await ctx.close();
+  };
+
+  await shoot({ viewport: { width: 1440, height: 900 } }, '14-mesa', async (page) => {
+    await page.screenshot({ path: `${OUT}/14-mesa-lista.png` });
+    await page.getByRole('link', { name: /El puerto licitará/ }).click();
+    await page.getByLabel('Título', { exact: true }).waitFor();
+    await page.screenshot({ path: `${OUT}/14-mesa-nota.png`, fullPage: true });
+    await page.getByRole('button', { name: 'Publicar', exact: true }).click();
+    await page.screenshot({ path: `${OUT}/14-mesa-confirmar.png` });
+  });
+  await shoot({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark' }, '15-mesa-oscura', async (page) => {
+    await page.getByRole('link', { name: /El puerto licitará/ }).click();
+    await page.getByLabel('Título', { exact: true }).waitFor();
+    await page.screenshot({ path: `${OUT}/15-mesa-oscura-nota.png`, fullPage: true });
+  });
+  await shoot({ ...devices['Pixel 7'] }, '16-mesa-movil', async (page) => {
+    await page.screenshot({ path: `${OUT}/16-mesa-movil-lista.png`, fullPage: true });
+    await page.getByRole('link', { name: /El puerto licitará/ }).click();
+    await page.getByLabel('Título', { exact: true }).waitFor();
+    await page.screenshot({ path: `${OUT}/16-mesa-movil-nota.png`, fullPage: true });
+  });
 });

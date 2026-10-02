@@ -6,7 +6,7 @@ Está en `/redaccion` (<https://contraste.mateopradal23.workers.dev/redaccion>).
 
 La lista tiene tres pestañas:
 
-- **En revisión**: lo que dejó el pipeline (en revisión, aprobadas y borradores).
+- **Para revisar**: lo que dejó el pipeline (en revisión, aprobadas y borradores).
 - **Publicadas**.
 - **Descartadas**: no se borra nada; una nota descartada se puede volver a revisar.
 
@@ -18,7 +18,9 @@ Al abrir una nota se editan el título, la bajada, la sección, el formato, los 
 | Descartada | Volver a revisión, guardar cambios |
 | Publicada | Publicar una corrección, despublicar (pide confirmación) |
 
-Si se cierra la pestaña con cambios sin guardar, el navegador avisa.
+Publicar y despublicar piden confirmación, porque cambian lo que ve el público. Si las fuentes no coinciden, la confirmación lo recuerda: el texto tiene que explicar la diferencia sin dar ninguna versión por cierta. Publicar desde la mesa es aprobar como persona de la redacción, que es lo que la base exige para publicar una nota en disputa.
+
+Con cambios sin guardar, la mesa pregunta antes de cerrar o recargar la pestaña, de seguir un enlace (por ejemplo, "Volver a la lista") y de cerrar la sesión. En el teléfono, el resultado del control aparece antes del formulario.
 
 ## Qué controla la base
 
@@ -34,6 +36,8 @@ La mesa revisa todo antes de guardar para explicar mejor los errores, pero las r
 ## Qué pasa al publicar
 
 Al publicar, despublicar o corregir una nota publicada, la base le pide a GitHub que rearme el sitio (`repository_dispatch` de tipo `publicar`). El cambio aparece en unos minutos. Las notas de demostración no piden armado. Si se llegó al tope diario de armados, sale en el armado de medianoche (ver `docs/DESPLIEGUE.md`).
+
+Mientras el sitio muestre la edición de demostración (sin `CONTENT_SOURCE=database`, ver `docs/BASE-DE-DATOS.md`), lo publicado queda en la base pero no aparece en el sitio. La mesa sabe cómo se armó el sitio y lo dice al confirmar y al publicar.
 
 ## Configuración inicial
 
@@ -58,6 +62,14 @@ Se hace una sola vez, desde el panel de Supabase (<https://supabase.com/dashboar
    Sin este secreto la mesa funciona igual, pero lo publicado recién aparece en el armado de medianoche. Cuando el token vence pasa lo mismo: se crea otro y se reemplaza el valor del secreto.
 
 Para sacar a alguien de la redacción: `delete from public.editors where user_id = (select id from auth.users where email = '…');`. Para que no pueda entrar más, también se borra su usuario en *Authentication > Users*.
+
+## La sesión
+
+La sesión de quien edita se guarda en el navegador, en el almacenamiento del dominio del sitio, para no pedir la contraseña en cada pestaña. Cualquier script que corra en ese dominio podría leerla. Hoy el sitio no carga scripts de terceros y la mesa no carga publicidad, pero con AdSense el script de Google correría en el resto de las páginas: antes de activarlo, ver el paso correspondiente en `docs/ADSENSE.md`. En una computadora compartida, cerrar la sesión al terminar.
+
+## Pruebas
+
+`tests/e2e/redaccion.spec.ts` prueba la mesa contra un Supabase simulado (`tests/e2e/supabase-mock.ts`), sin tocar la base real: ingresar, publicar una nota en disputa, corregir una publicada, el aviso cuando otra persona guardó la nota antes y el de cambios sin guardar. Las capturas de `npx playwright test -c playwright.visual.config.ts` incluyen la mesa en claro, oscuro y teléfono.
 
 ## Si algo no anda
 

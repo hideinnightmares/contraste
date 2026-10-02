@@ -76,7 +76,7 @@ Las direcciones que no se generaron no existen: Cloudflare responde `out/404.htm
 
 - Encabezados en `public/_headers` (Cloudflare los aplica): `nosniff`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, HSTS.
 - Falta una Content Security Policy. Se recomienda agregarla al activar AdSense, con hashes de los scripts en línea (en un sitio estático no hay nonces por pedido), incluyendo los dominios que Google documenta para AdSense.
-- La mesa de redacción usa la clave publicable de Supabase y la sesión del editor: lo que puede ver y cambiar lo deciden las reglas de acceso y los triggers de la base, no la página (ver `docs/MESA-DE-REDACCION.md`).
+- La mesa de redacción usa la clave publicable de Supabase y la sesión del editor: lo que puede ver y cambiar lo deciden las reglas de acceso y los triggers de la base, no la página (ver `docs/MESA-DE-REDACCION.md`). La sesión se guarda en el navegador, en el dominio del sitio: antes de cargar scripts de terceros (AdSense), separar la mesa en otro dominio o dejar de guardar la sesión (ver `docs/ADSENSE.md`).
 - El sitio publicado no tiene código de servidor ni APIs que atacar ni sobrecargar. Cuando se habilite el newsletter, su alta irá en una función aparte con validación y límite de pedidos (ver `docs/NEWSLETTER.md`).
 - El índice de búsqueda publica solo lo que ya se ve en las notas (resumen y texto), nunca las fuentes ni los datos de revisión.
 - El JSON-LD se serializa escapando `<`.

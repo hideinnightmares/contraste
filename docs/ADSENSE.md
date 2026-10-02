@@ -25,6 +25,7 @@ Cada espacio lleva la etiqueta "Publicidad", un fondo distinto al editorial y su
    - `<AdSenseLoader>` carga el script oficial después de que la persona decide en el aviso de cookies; si rechazó la publicidad personalizada, se piden anuncios no personalizados.
    - `<AdSlot>` monta el `<ins class="adsbygoogle">` de cada posición.
 4. Poner `NEXT_PUBLIC_AD_PLACEHOLDERS=false` para que los espacios sin bloque configurado no muestren el marcador gris.
+5. Proteger la sesión de la mesa de redacción. La mesa guarda la sesión de quien edita en el navegador, en el mismo dominio que el sitio, y el script de AdSense correría en las demás páginas de ese dominio. Antes de activarlo, servir la mesa desde un dominio propio (por ejemplo, un subdominio que publique solo `/redaccion`) o dejar de guardar la sesión en el navegador (`src/lib/supabase/browser.ts`), aunque haya que ingresar en cada pestaña. Ver `docs/MESA-DE-REDACCION.md`.
 
 ## Consentimiento
 

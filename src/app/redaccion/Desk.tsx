@@ -2,41 +2,53 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { isEditor, onSessionChange, signOut } from './api';
 import { LoginForm } from './LoginForm';
 import { DraftList, type ListTab } from './DraftList';
 import { DraftEditor } from './DraftEditor';
+import type { SiteMode } from './model';
+import { confirmLeave } from './unsaved';
 import styles from './desk.module.css';
 
 type Gate =
   | { kind: 'loading' }
   | { kind: 'signed-out' }
   | { kind: 'not-editor'; email: string }
-  | { kind: 'editor'; session: Session }
+  | { kind: 'editor'; userId: string; email: string }
   | { kind: 'error'; message: string };
 
 async function gateFor(session: Session | null): Promise<Gate> {
   if (!session) return { kind: 'signed-out' };
-  return (await isEditor(session.user.id)) ? { kind: 'editor', session } : { kind: 'not-editor', email: session.user.email ?? '' };
+  const email = session.user.email ?? '';
+  return (await isEditor(session.user.id)) ? { kind: 'editor', userId: session.user.id, email } : { kind: 'not-editor', email };
 }
 
 const TABS: ListTab[] = ['revision', 'publicadas', 'descartadas'];
 
 /** Mesa de redacción: sesión, permiso de editor y qué pantalla mostrar según la dirección. */
-export function Desk() {
+export function Desk({ site }: { site: SiteMode }) {
   const params = useSearchParams();
   const [gate, setGate] = useState<Gate>({ kind: 'loading' });
+  /** Usuario ya confirmado como editor. */
+  const editorId = useRef<string | null>(null);
 
   useEffect(() => {
     let active = true;
     // Supabase avisa la sesión inicial y cada cambio. La consulta a la base va fuera del aviso
     // (su documentación pide no llamar a Supabase dentro de ese callback).
     const stop = onSessionChange((session) => {
+      // La renovación del token y la vuelta a la pestaña avisan otra vez la misma sesión: no se
+      // vuelve a preguntar, así un corte de red en ese momento no cierra la nota que se edita.
+      if (session && session.user.id === editorId.current) return;
       setTimeout(() => {
         gateFor(session).then(
-          (next) => active && setGate(next),
+          (next) => {
+            if (!active) return;
+            editorId.current = next.kind === 'editor' ? next.userId : null;
+            setGate(next);
+          },
           (error: Error) => active && setGate({ kind: 'error', message: error.message }),
         );
       }, 0);
@@ -50,7 +62,7 @@ export function Desk() {
   const noteId = params.get('nota');
   const tabParam = params.get('estado');
   const tab: ListTab = TABS.includes(tabParam as ListTab) ? (tabParam as ListTab) : 'revision';
-  const email = gate.kind === 'editor' ? gate.session.user.email : gate.kind === 'not-editor' ? gate.email : null;
+  const email = gate.kind === 'editor' || gate.kind === 'not-editor' ? gate.email : null;
 
   return (
     <>
@@ -62,7 +74,7 @@ export function Desk() {
           {email && <span className={styles.barUser}>{email}</span>}
           <Link href="/">Ver el sitio</Link>
           {email && (
-            <button type="button" className={styles.linkButton} onClick={() => void signOut()}>
+            <button type="button" className={styles.linkButton} onClick={() => confirmLeave() && void signOut()}>
               Cerrar sesión
             </button>
           )}
@@ -85,7 +97,8 @@ export function Desk() {
             <p>Si debería tener acceso, alguien con acceso a la base tiene que agregarlo a la tabla de editores.</p>
           </div>
         )}
-        {gate.kind === 'editor' && (noteId ? <DraftEditor key={noteId} id={noteId} /> : <DraftList key={tab} tab={tab} />)}
+        {gate.kind === 'editor' &&
+          (noteId ? <DraftEditor key={noteId} id={noteId} site={site} /> : <DraftList key={tab} tab={tab} />)}
       </main>
     </>
   );

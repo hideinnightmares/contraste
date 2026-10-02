@@ -17,25 +17,28 @@ const TONE_LABEL = { disputed: 'Las fuentes no coinciden', context: 'Contexto', 
 /** Una línea por elemento; las vacías se descartan al guardar. */
 const lines = (value: string) => value.split('\n');
 
-function BlockFields({ block, onChange }: { block: BodyBlock; onChange: (block: BodyBlock) => void }) {
+/** Campos de un bloque. `n` es su posición: los nombres accesibles la llevan para distinguir los bloques. */
+function BlockFields({ block, n, onChange }: { block: BodyBlock; n: number; onChange: (block: BodyBlock) => void }) {
   const id = useId();
   switch (block.type) {
     case 'p':
       return (
         <textarea
-          aria-label="Texto del párrafo"
+          aria-label={`Texto del bloque ${n}, párrafo`}
           className={styles.textarea}
           value={block.text}
           onChange={(e) => onChange({ ...block, text: e.target.value })}
         />
       );
     case 'h2':
-      return <input aria-label="Subtítulo" className={styles.input} value={block.text} onChange={(e) => onChange({ ...block, text: e.target.value })} />;
+      return (
+        <input aria-label={`Texto del bloque ${n}, subtítulo`} className={styles.input} value={block.text} onChange={(e) => onChange({ ...block, text: e.target.value })} />
+      );
     case 'list':
       return (
         <>
           <textarea
-            aria-label="Elementos de la lista, uno por línea"
+            aria-label={`Elementos de la lista del bloque ${n}, uno por línea`}
             className={styles.textarea}
             value={block.items.join('\n')}
             onChange={(e) => onChange({ ...block, items: lines(e.target.value) })}
@@ -77,7 +80,7 @@ function BlockFields({ block, onChange }: { block: BodyBlock; onChange: (block: 
       return (
         <>
           <select
-            aria-label="Tipo de recuadro"
+            aria-label={`Tipo de recuadro del bloque ${n}`}
             className={styles.select}
             value={block.tone}
             onChange={(e) => onChange({ ...block, tone: e.target.value as typeof block.tone })}
@@ -88,9 +91,14 @@ function BlockFields({ block, onChange }: { block: BodyBlock; onChange: (block: 
               </option>
             ))}
           </select>
-          <input aria-label="Título del recuadro" className={styles.input} value={block.title} onChange={(e) => onChange({ ...block, title: e.target.value })} />
+          <input
+            aria-label={`Título del recuadro del bloque ${n}`}
+            className={styles.input}
+            value={block.title}
+            onChange={(e) => onChange({ ...block, title: e.target.value })}
+          />
           <textarea
-            aria-label="Texto del recuadro"
+            aria-label={`Texto del recuadro del bloque ${n}`}
             className={styles.textarea}
             value={block.text}
             onChange={(e) => onChange({ ...block, text: e.target.value })}
@@ -113,7 +121,7 @@ export function BodyEditor({ blocks, onChange, disabled }: { blocks: BodyBlock[]
   const remove = (index: number) => onChange(blocks.filter((_, i) => i !== index));
 
   return (
-    <fieldset className={styles.form} disabled={disabled}>
+    <fieldset className={`${styles.form} ${styles.fieldset}`} disabled={disabled}>
       <legend className={styles.label}>Cuerpo</legend>
       {blocks.map((block, index) => (
         <div key={index} className={styles.block}>
@@ -122,18 +130,36 @@ export function BodyEditor({ blocks, onChange, disabled }: { blocks: BodyBlock[]
               {index + 1}. {BLOCK_LABEL[block.type]}
             </span>
             <span className={styles.blockTools}>
-              <button type="button" className={styles.linkButton} onClick={() => move(index, -1)} disabled={index === 0}>
+              <button
+                type="button"
+                className={styles.linkButton}
+                onClick={() => move(index, -1)}
+                disabled={index === 0}
+                aria-label={`Subir el bloque ${index + 1}`}
+              >
                 Subir
               </button>
-              <button type="button" className={styles.linkButton} onClick={() => move(index, 1)} disabled={index === blocks.length - 1}>
+              <button
+                type="button"
+                className={styles.linkButton}
+                onClick={() => move(index, 1)}
+                disabled={index === blocks.length - 1}
+                aria-label={`Bajar el bloque ${index + 1}`}
+              >
                 Bajar
               </button>
-              <button type="button" className={styles.linkButton} onClick={() => remove(index)} disabled={blocks.length === 1}>
+              <button
+                type="button"
+                className={styles.linkButton}
+                onClick={() => remove(index)}
+                disabled={blocks.length === 1}
+                aria-label={`Quitar el bloque ${index + 1}`}
+              >
                 Quitar
               </button>
             </span>
           </div>
-          <BlockFields block={block} onChange={(b) => replace(index, b)} />
+          <BlockFields block={block} n={index + 1} onChange={(b) => replace(index, b)} />
         </div>
       ))}
       <div className={styles.blockTools}>
