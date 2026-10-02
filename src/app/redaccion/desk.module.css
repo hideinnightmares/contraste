@@ -33,14 +33,16 @@
 
 .barActions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-2) var(--space-4);
   font-size: var(--fs-ui);
 }
 
 .barActions a,
 .barActions button {
   color: inherit;
+  white-space: nowrap;
 }
 
 .barUser {
@@ -414,6 +416,43 @@
   max-width: 26rem;
   margin: var(--space-8) auto 0;
   padding: 0 var(--space-5);
+}
+
+/* Verificación en dos pasos */
+
+.steps {
+  display: grid;
+  gap: var(--space-2);
+  padding-left: 1.2rem;
+  line-height: 1.5;
+}
+
+/* El QR va siempre sobre blanco (--qr-paper). */
+.qr {
+  width: fit-content;
+  padding: var(--space-3);
+  background: var(--qr-paper);
+  border: 1px solid var(--rule);
+}
+
+.qr img {
+  display: block;
+  width: 200px;
+  height: 200px;
+}
+
+.secret {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--fs-ui);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.codeInput {
+  max-width: 12rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.5rem;
+  letter-spacing: 0.2em;
 }
 
 @media (max-width: 63.99rem) {

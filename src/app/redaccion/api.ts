@@ -81,6 +81,66 @@ export async function signOut(): Promise<void> {
   await browserSupabase().auth.signOut();
 }
 
+// ─── Verificación en dos pasos ─────────────────────────────────────────────────
+// La base solo deja leer y cambiar notas con una sesión que pasó el segundo paso (aal2,
+// migración 20261002211500_verificacion_en_dos_pasos.sql). Con la contraseña sola (aal1) la
+// mesa pide el código de la app de autenticación, o la configura la primera vez.
+
+export type AssuranceLevel = 'aal1' | 'aal2' | null;
+
+/** Nivel de la sesión actual y el que puede alcanzar (aal2 si ya tiene la app configurada). */
+export async function assuranceLevel(): Promise<{ current: AssuranceLevel; next: AssuranceLevel }> {
+  const { data, error } = await browserSupabase().auth.mfa.getAuthenticatorAssuranceLevel();
+  if (error) throw deskError(error);
+  return { current: data.currentLevel as AssuranceLevel, next: data.nextLevel as AssuranceLevel };
+}
+
+/** Id de la app de autenticación ya configurada, o `null`. */
+export async function verifiedFactorId(): Promise<string | null> {
+  const { data, error } = await browserSupabase().auth.mfa.listFactors();
+  if (error) throw deskError(error);
+  return data.totp[0]?.id ?? null;
+}
+
+export interface Enrollment {
+  factorId: string;
+  /** Código QR como imagen (data URL de un SVG). */
+  qrCode: string;
+  /** La misma clave, para escribirla a mano si no se puede escanear. */
+  secret: string;
+}
+
+/** Empieza a configurar la app de autenticación. Un alta que quedó a medias se descarta. */
+export async function startEnrollment(): Promise<Enrollment> {
+  const mfa = browserSupabase().auth.mfa;
+  const { data: factors, error: listError } = await mfa.listFactors();
+  if (listError) throw deskError(listError);
+  for (const factor of factors.all.filter((f) => f.factor_type === 'totp' && f.status !== 'verified')) {
+    const { error } = await mfa.unenroll({ factorId: factor.id });
+    if (error) throw deskError(error);
+  }
+  const { data, error } = await mfa.enroll({ factorType: 'totp', friendlyName: 'Mesa de redacción', issuer: 'Contraste' });
+  if (error) {
+    if (/disabled|not enabled/i.test(error.message)) {
+      throw new DeskError('La verificación en dos pasos está desactivada en Supabase (Authentication > Multi-Factor).', 'auth');
+    }
+    throw deskError(error);
+  }
+  return { factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret };
+}
+
+/** Comprueba el código de la app. Si es correcto, la sesión pasa a aal2 y Supabase lo avisa. */
+export async function verifyCode(factorId: string, code: string): Promise<void> {
+  const { error } = await browserSupabase().auth.mfa.challengeAndVerify({ factorId, code: code.replace(/\s/g, '') });
+  if (!error) return;
+  if (error.code === 'mfa_verification_failed' || /invalid totp/i.test(error.message)) {
+    throw new DeskError('El código no es correcto o ya cambió. Probá con el que muestra ahora la app.', 'auth');
+  }
+  if (error.code === 'mfa_challenge_expired') throw new DeskError('El código venció. Probá con el que muestra ahora la app.', 'auth');
+  if (/rate limit|too many/i.test(error.message)) throw new DeskError('Hubo demasiados intentos. Esperá unos minutos y probá de nuevo.', 'auth');
+  throw deskError(error);
+}
+
 /** ¿La persona con sesión está en la redacción? (la regla de la base solo le deja ver su propia fila). */
 export async function isEditor(userId: string): Promise<boolean> {
   const { data, error } = await browserSupabase().from('editors').select('user_id').eq('user_id', userId).maybeSingle();

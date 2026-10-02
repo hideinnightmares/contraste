@@ -36,6 +36,8 @@
   --scrim: rgb(0 0 0 / 0.6);
   --image-placeholder: #e3e3e3;
   --shadow-float: none;
+  /* Fondo de los códigos QR: blanco en los dos temas (sobre oscuro, algunas apps no los leen). */
+  --qr-paper: #ffffff;
   color-scheme: light;
 
   /* Una familia con ancho variable para titulares e interfaz, y una serif de lectura. */

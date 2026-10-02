@@ -22,6 +22,21 @@ Publicar y despublicar piden confirmación, porque cambian lo que ve el público
 
 Con cambios sin guardar, la mesa pregunta antes de cerrar o recargar la pestaña, de seguir un enlace (por ejemplo, "Volver a la lista") y de cerrar la sesión. En el teléfono, el resultado del control aparece antes del formulario.
 
+## Verificación en dos pasos
+
+Para entrar a la mesa hacen falta la contraseña y un código de 6 dígitos que genera una app de autenticación en el teléfono (Google Authenticator, Microsoft Authenticator, 1Password u otra). Así, una contraseña robada no alcanza para publicar en nombre del diario.
+
+- **La primera vez**, después de la contraseña, la mesa pide configurar la app: se escanea un código QR (o se carga la clave a mano) y se ingresa el primer código.
+- **Las siguientes**, pide el código después de la contraseña. La sesión queda abierta en ese navegador hasta cerrarla.
+- **Lo controla la base**, no la pantalla: con la contraseña sola (sesión `aal1`) no devuelve notas, historial ni informes, y no deja cambiar nada (migración `20261002211500_verificacion_en_dos_pasos.sql`). La tabla de editores sí se puede leer, para que la mesa sepa a quién pedirle el código.
+- Tiene que estar activado en Supabase: *Authentication > Multi-Factor*, "Authenticator app (TOTP)". Viene activado por defecto y no tiene costo (la variante por SMS sí es paga).
+
+**Si alguien pierde el teléfono**, se borra su app desde el *SQL Editor* de Supabase y, al entrar, la mesa le pide configurar una nueva:
+
+```sql
+delete from auth.mfa_factors where user_id = (select id from auth.users where email = 'el-email-del-editor');
+```
+
 ## Qué controla la base
 
 La mesa revisa todo antes de guardar para explicar mejor los errores, pero las reglas las hace cumplir la base (migración `20261002182417_mesa_de_redaccion.sql`), así que valen también para el pipeline y para cualquier acceso por la API:
@@ -74,6 +89,8 @@ La sesión de quien edita se guarda en el navegador, en el almacenamiento del do
 ## Si algo no anda
 
 - **"No forma parte de la redacción"**: falta el paso 3.
+- **"El código no es correcto"**: el código cambia cada 30 segundos; usar el que muestra la app en ese momento. Si sigue fallando, revisar que la hora del teléfono esté en automático.
+- **"La verificación en dos pasos está desactivada en Supabase"**: activar "Authenticator app (TOTP)" en *Authentication > Multi-Factor*.
 - **Se publicó pero no aparece**: en GitHub, pestaña *Actions*, ver si corrió "Publicar". Si no corrió, ver qué respondió GitHub al pedido de la base, en *SQL Editor*:
 
   ```sql
