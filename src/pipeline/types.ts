@@ -15,6 +15,13 @@ export interface SourceDefinition {
   origin: string;
   connector: 'rss' | 'fixture';
   url: string;
+  /**
+   * Feeds de secciones del mismo medio, para los que dan pocas notas en el principal. Se leen
+   * junto con `url`; si uno falla, se sigue con el resto.
+   */
+  extraFeeds?: string[];
+  /** Portada del sitio: el probador de fuentes busca ahí el feed si la `url` deja de andar. */
+  site?: string;
   enabled: boolean;
   /** Solo sirve para descubrir temas (agregadores): nunca cuenta como fuente. */
   discoveryOnly?: boolean;
@@ -68,6 +75,8 @@ export interface Figure {
   value: number;
   unit: string | null;
   context: string[];
+  /** La palabra justo antes de la cifra ("los" en "a los 96 años", "durante" en "durante 22 años"). */
+  lead: string;
   itemId: string;
 }
 
@@ -129,7 +138,8 @@ export interface ClusterOutcome {
   draft: DraftArticle | null;
   grounding: GroundingReport | null;
   review: ReviewDecision;
-  stage: 'verified' | 'already_covered' | 'awaiting_writer' | 'drafted' | 'writer_failed' | 'save_failed';
+  /** `deferred`: tenía varias fuentes, pero la corrida llegó a su máximo de borradores (o el redactor se quedó sin cupo). */
+  stage: 'verified' | 'already_covered' | 'deferred' | 'awaiting_writer' | 'drafted' | 'writer_failed' | 'save_failed';
   error?: string;
   /** Nota existente que ya cubre este hecho (stage `already_covered`). */
   coveredBy?: string;
@@ -141,6 +151,8 @@ export interface PipelineReport {
   startedAt: string;
   finishedAt: string;
   collected: number;
+  /** Coberturas en vivo y páginas de servicio descartadas (`editorial.collection.skipTitles`). */
+  skipped: number;
   failedSources: { sourceId: string; error: string }[];
   clusters: number;
   outcomes: ClusterOutcome[];

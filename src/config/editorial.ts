@@ -41,6 +41,30 @@ export const editorial = {
       alwaysHumanReview: ['politica'],
     },
   },
+  collection: {
+    /**
+     * Notas que no son un hecho para contrastar y se descartan al recopilar: coberturas en vivo
+     * (se actualizan todo el día y sus cifras cambian de una hora a otra) y páginas de servicio
+     * (cotizaciones del día, clima, horóscopo, sorteos). Se comparan con el título.
+     */
+    skipTitles: [
+      /\b(?:en vivo|en directo|minuto a minuto)\b/i,
+      /^\s*🔴/u,
+      /\bd[oó]lar(?:\s+[a-záéíóúñ]+){0,2}\s+hoy\b/i,
+      /\bcotizaci[oó]n\b.*\bhoy\b/i,
+      /^\s*(?:el\s+)?clima en\b/i,
+      /\bpron[oó]stico del tiempo\b/i,
+      /\bhor[oó]scopo\b/i,
+      /\b(?:quiniela|quini 6|loto plus|brinco)\b/i,
+    ],
+  },
+  drafting: {
+    /**
+     * Borradores de una misma sección por corrida, como máximo (la sección que asigna el
+     * clasificador). Así una corrida no se llena de un solo tema: el resto queda para la próxima.
+     */
+    maxPerCategoryPerRun: 2,
+  },
   dedupe: {
     /** Similitud mínima de títulos (0–1) para considerar que dos ítems cuentan lo mismo. */
     titleSimilarity: 0.5,

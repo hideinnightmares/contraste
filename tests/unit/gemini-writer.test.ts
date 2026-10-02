@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@google/genai';
-import { sourceDefinitions } from '@/config/sources';
+import { demoSources } from '@/config/sources';
 import { FixtureConnector } from '@/pipeline/sources/fixture';
 import { clusterItems } from '@/pipeline/stages/dedupe';
 import { verifyCluster } from '@/pipeline/stages/verify';
@@ -14,7 +14,7 @@ import type { ResearchBrief } from '@/pipeline/types';
 const NOW = new Date('2026-10-01T13:00:00Z');
 
 async function brief(): Promise<ResearchBrief> {
-  const connectors = sourceDefinitions.filter((d) => d.enabled).map((d) => new FixtureConnector(d, undefined, () => NOW));
+  const connectors = demoSources.filter((d) => d.enabled).map((d) => new FixtureConnector(d, undefined, () => NOW));
   const items = (await Promise.all(connectors.map((c) => c.fetchItems({ since: new Date(NOW.getTime() - 86_400_000) })))).flat();
   const cluster = clusterItems(items).find((c) => c.items.length === 5)!;
   return buildBrief(cluster, verifyCluster(cluster), 'sociedad');

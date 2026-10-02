@@ -10,6 +10,13 @@ const PRIMARY_KINDS = new Set(['official', 'public_document', 'news_agency']);
 const SYNDICATION_SIMILARITY = 0.85;
 
 const itemText = (it: SourceItem) => `${it.title}. ${it.summary} ${it.content ?? ''}`;
+/**
+ * Las cifras se comparan sobre el título y el resumen, no sobre la nota completa que traen
+ * algunos feeds: en un texto largo, dos cifras con la misma unidad suelen hablar de cosas
+ * distintas ("murió a los 76 años" y "empezó a tocar a los 13 años").
+ */
+const SUMMARY_CHARS = 600;
+const feedSummary = (it: SourceItem) => `${it.title}. ${it.summary.slice(0, SUMMARY_CHARS)}`;
 
 let defaultOutlets: KnownOutlet[] | null = null;
 
@@ -66,7 +73,7 @@ export function verifyCluster(cluster: StoryCluster, options: VerifyOptions = {}
   const independentSources = origins.length;
 
   // Cifras y contradicciones entre orígenes distintos.
-  const figures: Figure[] = usable.flatMap((it) => extractFigures(itemText(it), it.id));
+  const figures: Figure[] = usable.flatMap((it) => extractFigures(feedSummary(it), it.id));
   const contradictions: Contradiction[] = [];
   const seenPairs = new Set<string>();
   for (let i = 0; i < figures.length; i++) {

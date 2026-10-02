@@ -8,6 +8,12 @@ import type { DraftArticle, ResearchBrief } from '../types';
  */
 export interface ArticleWriter {
   readonly name: string;
+  /**
+   * Robots del proveedor de IA cuyas prohibiciones se respetan antes de mandarle el texto
+   * completo de una nota (`WebArticleFetcher`). Lo declara un redactor cuyo proveedor usa lo que
+   * recibe para entrenar sus modelos: un sitio que se lo prohíbe no quiere que su texto llegue ahí.
+   */
+  readonly optOutAgents?: string[];
   write(brief: ResearchBrief): Promise<DraftArticle>;
 }
 

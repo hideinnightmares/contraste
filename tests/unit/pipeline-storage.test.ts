@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sourceDefinitions } from '@/config/sources';
+import { demoSources } from '@/config/sources';
 import { runPipeline } from '@/pipeline/run';
 import { FixtureConnector } from '@/pipeline/sources/fixture';
 import { coverageFromRows, supabaseFromEnv } from '@/pipeline/storage/supabase';
@@ -8,7 +8,7 @@ import type { ArticleWriter } from '@/pipeline/writers/writer';
 import type { DraftArticle, ResearchBrief } from '@/pipeline/types';
 
 const NOW = new Date('2026-10-01T13:00:00Z');
-const connectors = () => sourceDefinitions.filter((d) => d.enabled).map((d) => new FixtureConnector(d, undefined, () => NOW));
+const connectors = () => demoSources.filter((d) => d.enabled).map((d) => new FixtureConnector(d, undefined, () => NOW));
 
 function draftFor(brief: ResearchBrief): DraftArticle {
   return {

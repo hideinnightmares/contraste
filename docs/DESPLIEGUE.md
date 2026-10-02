@@ -39,11 +39,12 @@ Un repositorio privado tiene 2.000 minutos gratis de GitHub Actions por mes (uno
 | --- | --- |
 | 15 publicaciones por día × 2 min | 900 |
 | Armado diario de medianoche | 60 |
-| Pipeline cada 2 horas (cuando corra en GitHub) × 2 min | 720 |
+| Pipeline: 8 corridas por día (cada 2 horas, de 8 a 22) × 3 min | 720 |
 | Copia de seguridad diaria de la base × 3 min | 90 |
-| **Total** | **1.770 de 2.000** |
+| Prueba semanal de las fuentes × 2 min | 10 |
+| **Total** | **1.780 de 2.000** |
 
-Con el pipeline cada 2 horas y la copia diaria, el máximo seguro es de unas 18 publicaciones por día. El tope está en la variable del repositorio `CONTRASTE_MAX_PUBLICACIONES_DIARIAS` (15 si no se define). Al llegar al tope, las aprobaciones siguientes no arman el sitio y salen en el armado de medianoche: no se pierde nada y los minutos no se agotan antes de fin de mes.
+Con el pipeline, la copia diaria y la prueba de las fuentes, el máximo seguro es de unas 18 publicaciones por día. Los minutos del pipeline se gastan solo cuando está activo (variable `CONTRASTE_PIPELINE_ACTIVO`, ver [AUTOMATIZACION.md](AUTOMATIZACION.md#corrida-programada)). El tope está en la variable del repositorio `CONTRASTE_MAX_PUBLICACIONES_DIARIAS` (15 si no se define). Al llegar al tope, las aprobaciones siguientes no arman el sitio y salen en el armado de medianoche: no se pierde nada y los minutos no se agotan antes de fin de mes.
 
 ### Configurarla (una vez)
 
@@ -79,7 +80,7 @@ Otros límites: 25 MB por archivo, y en GitHub Actions los minutos de arriba.
 ## Variables y secretos
 
 - `.env.production` lleva solo datos públicos (`NEXT_PUBLIC_SITE_URL`) y se sube al repositorio. Todo `NEXT_PUBLIC_*` queda escrito en las páginas: nunca un secreto ahí.
-- Las claves del pipeline (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`) van en `.env.pipeline`, que solo lee `npm run pipeline` y no entra al armado del sitio. En GitHub Actions, como secretos del repositorio.
+- Las claves del pipeline (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `SUPABASE_SECRET_KEY`) van en `.env.pipeline`, que solo lee `npm run pipeline` y no entra al armado del sitio. En GitHub Actions, como secretos del repositorio (los usa el flujo Pipeline de noticias).
 - El token de Cloudflare vive solo en GitHub (secreto) y en tu sesión de Wrangler (`npx wrangler login`).
 
 ## Fechas en un sitio estático

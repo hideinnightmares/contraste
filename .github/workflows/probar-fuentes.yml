@@ -1,0 +1,55 @@
+# Prueba las fuentes del pipeline: que cada feed responda, que se pueda leer una nota y qué permite
+# el robots.txt de cada sitio. Ver docs/AUTOMATIZACION.md, "Fuentes".
+#
+# Cuándo corre:
+# - en un pull request que cambia las fuentes o el pipeline;
+# - los lunes, para enterarse si un medio cambió la dirección de su feed;
+# - a mano, desde la pestaña Actions (con la opción de ensayar el pipeline sin redactar).
+#
+# No usa secretos: solo lee sitios públicos. El resultado queda en el resumen de la corrida.
+name: Probar las fuentes
+
+on:
+  pull_request:
+    paths:
+      - 'src/config/sources.ts'
+      - 'src/config/editorial.ts'
+      - 'src/pipeline/**'
+      - 'scripts/probar-fuentes.ts'
+      - '.github/workflows/probar-fuentes.yml'
+  schedule:
+    - cron: '23 12 * * 1' # lunes 09:23 de Buenos Aires
+  workflow_dispatch:
+    inputs:
+      ensayo:
+        description: 'Además, correr el pipeline sin redactar ni guardar (muestra qué hechos encuentra)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  probar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # En un pull request lista también los otros feeds de cada sitio, para elegir el mejor.
+      - name: Probar las fuentes
+        run: npm run fuentes:probar -- ${{ github.event_name == 'pull_request' && '--descubrir' || '' }}
+
+      # En un pull request, también un ensayo: qué hechos encuentra el pipeline con los cambios.
+      # Lee notas completas de pocos hechos (el máximo por corrida) y no guarda nada.
+      - name: Ensayar el pipeline sin redactar ni guardar
+        if: always() && (github.event_name == 'pull_request' || inputs.ensayo)
+        run: npm run pipeline

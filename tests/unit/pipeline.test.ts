@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sourceDefinitions } from '@/config/sources';
+import { demoSources } from '@/config/sources';
 import { editorial } from '@/config/editorial';
 import { connectorsFor, runPipeline } from '@/pipeline/run';
 import { FixtureConnector } from '@/pipeline/sources/fixture';
@@ -21,7 +21,7 @@ import type { DraftArticle, ResearchBrief, SourceItem } from '@/pipeline/types';
 const NOW = new Date('2026-10-01T13:00:00Z');
 
 async function fixtureItems(): Promise<SourceItem[]> {
-  const connectors = sourceDefinitions.filter((d) => d.enabled).map((d) => new FixtureConnector(d, undefined, () => NOW));
+  const connectors = demoSources.filter((d) => d.enabled).map((d) => new FixtureConnector(d, undefined, () => NOW));
   const batches = await Promise.all(connectors.map((c) => c.fetchItems({ since: new Date(NOW.getTime() - 86_400_000) })));
   return batches.flat();
 }
@@ -110,9 +110,9 @@ describe('fuentes', () => {
   });
 
   it('el conector RSS reporta errores HTTP sin romper el pipeline', async () => {
-    const def = { ...sourceDefinitions[0], id: 'rss-roto', connector: 'rss' as const, url: 'https://example.com/feed.xml' };
+    const def = { ...demoSources[0], id: 'rss-roto', connector: 'rss' as const, url: 'https://example.com/feed.xml' };
     const failing = new RssConnector(def, async () => new Response('no', { status: 503 }));
-    const ok = new FixtureConnector(sourceDefinitions[0], undefined, () => NOW);
+    const ok = new FixtureConnector(demoSources[0], undefined, () => NOW);
     const report = await runPipeline({ connectors: [failing, ok], now: () => NOW });
     expect(report.failedSources).toEqual([{ sourceId: 'rss-roto', error: 'El feed respondió HTTP 503' }]);
     expect(report.collected).toBeGreaterThan(0);
@@ -123,7 +123,7 @@ describe('fuentes', () => {
   });
 
   it('solo habilita conectores de fuentes habilitadas', () => {
-    expect(connectorsFor([{ ...sourceDefinitions[0], enabled: false }])).toHaveLength(0);
+    expect(connectorsFor([{ ...demoSources[0], enabled: false }])).toHaveLength(0);
   });
 });
 
@@ -217,7 +217,7 @@ describe('pipeline completo', () => {
     };
     const saved: string[] = [];
     const report = await runPipeline({
-      connectors: sourceDefinitions.filter((d) => d.enabled).map((d) => new FixtureConnector(d, undefined, () => NOW)),
+      connectors: demoSources.filter((d) => d.enabled).map((d) => new FixtureConnector(d, undefined, () => NOW)),
       writer,
       publisher: {
         async save(article) {
