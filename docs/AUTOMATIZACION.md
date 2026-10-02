@@ -152,7 +152,7 @@ Para cada fuente, descarga el feed y cuenta las notas, y lee la más nueva como 
 
 En GitHub corre en el flujo **Probar las fuentes** (`.github/workflows/probar-fuentes.yml`), que tiene salida a internet. Corre en estos casos:
 
-- En cada pull request que toca las fuentes. Ahí lista los otros feeds de cada sitio y ensaya el pipeline sin redactar ni guardar.
+- En cada pull request que toca las fuentes o el pipeline. Ahí lista los otros feeds de cada sitio y ensaya el pipeline sin redactar ni guardar.
 - Los lunes, para enterarse si un medio cambió la dirección de su feed.
 - A mano, desde la pestaña Actions.
 
