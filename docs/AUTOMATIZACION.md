@@ -19,7 +19,11 @@ Llega hasta la verificación con las fuentes habilitadas en `src/config/sources.
 npm run pipeline -- --write --save
 ```
 
-Además redacta con IA y guarda las notas en `.data/pipeline/publicadas/` o `.data/pipeline/revision/`. Requiere `GEMINI_API_KEY` en `.env.pipeline` (gratis, ver [Redactor con IA](#redactor-con-ia)). Sin `--save`, los borradores quedan solo en el informe.
+Además redacta con IA y guarda. Con `SUPABASE_URL` y `SUPABASE_SECRET_KEY` en `.env.pipeline`, guarda las notas y el informe de la corrida en la base de datos (ver [BASE-DE-DATOS.md](BASE-DE-DATOS.md)); sin ellas, en `.data/pipeline/publicadas/` o `.data/pipeline/revision/`. Requiere `GEMINI_API_KEY` en `.env.pipeline` (gratis, ver [Redactor con IA](#redactor-con-ia)). Sin `--save`, los borradores quedan solo en el informe.
+
+Las notas armadas con fuentes de prueba quedan marcadas como demostración (`isDemo`) y **no se guardan en la base** salvo que se agregue `--permitir-demo`. El esquema de las notas rechaza una nota real que cite una fuente de prueba.
+
+**Sin duplicados entre corridas.** Antes de redactar, el pipeline lee de la base qué fuentes citan las notas de los últimos 7 días, en cualquier estado. Un hecho que comparte alguna fuente con una nota existente queda como `already_covered` y no se redacta de nuevo (tampoco gasta cupo de Gemini). Los slugs ya usados tampoco se repiten.
 
 Para correrlo de forma periódica, la opción gratis prevista es un flujo programado de GitHub Actions cada 2 horas: entra en los minutos gratis junto con las publicaciones (ver el presupuesto en [DESPLIEGUE.md](DESPLIEGUE.md#cuánto-se-puede-publicar)). Todavía no está creado, porque el pipeline necesita una base de datos donde guardar lo que produce. El pipeline es idempotente respecto de los slugs si se le pasan los ya usados (`takenSlugs`).
 
@@ -33,10 +37,10 @@ Para correrlo de forma periódica, la opción gratis prevista es un flujo progra
 | Investigación | `stages/research.ts` | Arma el dossier para el redactor. Punto de extensión: `ArticleFetcher` para traer el texto completo y buscar fuentes primarias |
 | Verificación | `stages/verify.ts`, `stages/figures.ts` | Cuenta fuentes independientes (excluye agregadores y detecta réplicas por similitud de texto), extrae cifras en formato argentino y detecta contradicciones entre fuentes, marca el lenguaje condicional |
 | Clasificación | `stages/classify.ts` | Asigna sección por palabras clave de `config/categories.ts` |
-| Redacción | `writers/` | Gemini (o Claude) escribe un borrador original solo con la información del dossier, con salida estructurada validada |
+| Redacción | `writers/` | Gemini (o Claude) escribe un borrador original solo con la información del dossier, con salida estructurada validada. En el dossier las fuentes se llaman F1, F2…; al volver, las citas se traducen a los ids reales (`resolveSourceIds`) |
 | Control | `stages/grounding.ts` | Rechaza borradores con cifras o nombres propios que no estén en las fuentes, o que den un mismo dato como confirmado y no confirmado |
 | Revisión | `stages/review.ts` | Decide: publicación automática, revisión humana o espera |
-| Publicación y SEO | `stages/publish.ts` | Convierte el borrador en una nota válida (slug único, metadatos, fuentes, verificación) y la entrega a un `Publisher` |
+| Publicación y SEO | `stages/publish.ts`, `storage/supabase.ts` | Convierte el borrador en una nota válida (slug único, metadatos, fuentes, verificación) y la guarda en la base. Si el guardado falla, el hecho queda como `save_failed` (no se confunde con una falla del redactor) |
 
 ## Estados de verificación
 

@@ -20,6 +20,9 @@ export function draftToArticle(outcome: ClusterOutcome, brief: ResearchBrief, no
 
   const v = outcome.verification;
   const published = outcome.review.decision === 'auto_publish';
+  // Una sola fuente de prueba alcanza para que la nota sea de demostración: nunca se guarda
+  // como real algo armado con información ficticia.
+  const isDemo = brief.sources.some((s) => s.isDemo);
   const iso = now.toISOString();
   return {
     id: `auto-${outcome.cluster.id}`,
@@ -41,7 +44,7 @@ export function draftToArticle(outcome: ClusterOutcome, brief: ResearchBrief, no
       kind: s.kind,
       url: s.url.startsWith('http') ? s.url : null,
       consultedAt: iso,
-      isDemo: false,
+      isDemo: s.isDemo,
     })),
     verification: {
       status: v.status,
@@ -68,18 +71,17 @@ export function draftToArticle(outcome: ClusterOutcome, brief: ResearchBrief, no
     },
     updates: [],
     live: false,
-    isDemo: false,
+    isDemo,
   };
 }
 
 /**
- * Destino de las notas. La implementación local escribe JSON en `.data/pipeline/`:
- * `publicadas/` para lo aprobado y `revision/` para la cola de revisión humana.
- * En producción se reemplaza por una que escriba en la base o en el CMS, y el
- * `ArticleRepository` del sitio lee de ahí.
+ * Destino de las notas. `SupabaseStore` (pipeline/storage/supabase.ts) las guarda en la
+ * base; `FilePublisher` escribe JSON en `.data/pipeline/` para probar sin base.
+ * Devuelve una referencia legible de dónde quedó la nota.
  */
 export interface Publisher {
-  save(article: Article): Promise<string>;
+  save(article: Article, meta?: { writer?: string }): Promise<string>;
 }
 
 export class FilePublisher implements Publisher {

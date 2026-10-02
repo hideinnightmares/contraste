@@ -36,6 +36,8 @@ export interface SourceItem {
   content?: string;
   publishedAt: string;
   fetchedAt: string;
+  /** Viene de una fuente de prueba (conector `fixture`): es ficticio. */
+  isDemo: boolean;
 }
 
 /** Grupo de ítems que cuentan el mismo hecho. */
@@ -74,7 +76,7 @@ export interface ResearchBrief {
   clusterId: string;
   headline: string;
   category: string | null;
-  sources: { id: string; name: string; kind: SourceKind; url: string; publishedAt: string; text: string }[];
+  sources: { id: string; name: string; kind: SourceKind; url: string; publishedAt: string; text: string; isDemo: boolean }[];
   verification: VerificationReport;
 }
 
@@ -114,8 +116,12 @@ export interface ClusterOutcome {
   draft: DraftArticle | null;
   grounding: GroundingReport | null;
   review: ReviewDecision;
-  stage: 'verified' | 'awaiting_writer' | 'drafted' | 'writer_failed';
+  stage: 'verified' | 'already_covered' | 'awaiting_writer' | 'drafted' | 'writer_failed' | 'save_failed';
   error?: string;
+  /** Nota existente que ya cubre este hecho (stage `already_covered`). */
+  coveredBy?: string;
+  /** Dónde quedó guardada la nota, si se guardó. */
+  savedAs?: string;
 }
 
 export interface PipelineReport {

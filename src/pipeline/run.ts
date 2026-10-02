@@ -10,7 +10,7 @@ import { checkGrounding } from './stages/grounding';
 import { decideReview } from './stages/review';
 import { draftToArticle, type Publisher } from './stages/publish';
 import type { ArticleWriter } from './writers/writer';
-import { WriterError } from './writers/writer';
+import { WriterError, resolveSourceIds } from './writers/writer';
 import type { ClusterOutcome, PipelineReport, SourceDefinition, SourceItem } from './types';
 
 export interface PipelineOptions {
@@ -24,6 +24,11 @@ export interface PipelineOptions {
   now?: () => Date;
   /** Slugs ya usados en el sitio, para no repetir. */
   takenSlugs?: Set<string>;
+  /**
+   * URL canónica de cada fuente ya citada por una nota existente → slug de esa nota. Un hecho
+   * con alguna de esas URLs ya está cubierto: no se vuelve a redactar (ni a gastar cupo de IA).
+   */
+  coveredSourceUrls?: Map<string, string>;
   log?: (message: string) => void;
 }
 
@@ -71,6 +76,7 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
   log(`${items.length} ítems en ${clusters.length} hechos`);
 
   const takenSlugs = options.takenSlugs ?? new Set<string>();
+  const covered = options.coveredSourceUrls ?? new Map<string, string>();
   const outcomes: ClusterOutcome[] = [];
   for (const cluster of clusters) {
     // Un grupo formado solo por agregadores no es noticia: es una pista.
@@ -78,6 +84,21 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
 
     const verification = verifyCluster(cluster);
     const { category } = classifyCluster(cluster);
+
+    const coveredBy = cluster.items.map((i) => covered.get(i.url)).find((slug) => slug !== undefined);
+    if (coveredBy) {
+      outcomes.push({
+        cluster,
+        verification,
+        category,
+        draft: null,
+        grounding: null,
+        review: { decision: 'hold', reasons: [`Ya está cubierto por la nota "${coveredBy}".`] },
+        stage: 'already_covered',
+        coveredBy,
+      });
+      continue;
+    }
     const outcome: ClusterOutcome = {
       cluster,
       verification,
@@ -106,16 +127,11 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
     }
 
     try {
-      outcome.draft = await options.writer.write(brief);
+      outcome.draft = resolveSourceIds(await options.writer.write(brief), brief);
       outcome.stage = 'drafted';
       outcome.grounding = checkGrounding(outcome.draft, brief);
       outcome.category = outcome.draft.category ?? category;
       outcome.review = decideReview({ verification, category: outcome.category, draft: outcome.draft, grounding: outcome.grounding });
-      if (options.publisher) {
-        const article = draftToArticle(outcome, brief, now(), takenSlugs);
-        const file = await options.publisher.save(article);
-        log(`guardada ${article.slug} → ${file}`);
-      }
     } catch (err) {
       outcome.stage = 'writer_failed';
       outcome.error = err instanceof WriterError ? err.message : `Error: ${(err as Error).message}`;
@@ -125,6 +141,20 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
         err instanceof WriterError && err.retryable
           ? { decision: 'hold', reasons: [`La redacción falló por un problema temporal; se reintenta en la próxima corrida. ${outcome.error}`] }
           : { decision: 'human_review', reasons: [`La redacción falló: ${outcome.error}`] };
+    }
+
+    // Guardado aparte: una falla de la base no es una falla del redactor.
+    if (outcome.stage === 'drafted' && options.publisher) {
+      try {
+        const article = draftToArticle(outcome, brief, now(), takenSlugs);
+        outcome.savedAs = await options.publisher.save(article, { writer: outcome.draft?.writer });
+        log(`guardada ${article.slug} → ${outcome.savedAs}`);
+      } catch (err) {
+        outcome.stage = 'save_failed';
+        outcome.error = (err as Error).message;
+        outcome.review = { decision: 'human_review', reasons: [`El borrador se redactó pero no se pudo guardar: ${outcome.error}`] };
+        log(`no se pudo guardar "${outcome.draft?.title}": ${outcome.error}`);
+      }
     }
     outcomes.push(outcome);
   }

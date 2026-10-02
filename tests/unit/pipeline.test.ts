@@ -247,8 +247,31 @@ describe('pipeline completo', () => {
     );
     expect(article.slug).toBe('habilitan-el-puente-sobre-el-rio-salado-2');
     expect(article.review.status).toBe('in_review');
-    expect(article.isDemo).toBe(false);
+    // Las fuentes de prueba son ficticias: la nota queda marcada como demostración.
+    expect(article.isDemo).toBe(true);
+    expect(article.sources.every((s) => s.isDemo)).toBe(true);
     expect(article.verification.independentSources).toBe(3);
     expect(articleSchema.safeParse(article).success).toBe(true);
+  });
+
+  it('una nota con fuentes reales es real, y el esquema no acepta una nota real con fuentes de prueba', async () => {
+    const cluster = clusterItems(await fixtureItems()).find((c) => c.items.length === 5)!;
+    const real = { ...cluster, items: cluster.items.map((it) => ({ ...it, isDemo: false })) };
+    const v = verifyCluster(real);
+    const brief = await buildBrief(real, v, 'sociedad');
+    const draft = fakeDraft(brief);
+    const article = draftToArticle(
+      { cluster: real, verification: v, category: 'sociedad', draft, grounding: checkGrounding(draft, brief), review: { decision: 'human_review', reasons: ['x'] }, stage: 'drafted' },
+      brief,
+      NOW,
+      new Set(),
+    );
+    expect(article.isDemo).toBe(false);
+    expect(articleSchema.safeParse(article).success).toBe(true);
+
+    const mezclada = { ...article, sources: article.sources.map((s, i) => (i === 0 ? { ...s, isDemo: true } : s)) };
+    const result = articleSchema.safeParse(mezclada);
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.map((i) => i.message).join(' ')).toMatch(/fuentes de prueba/);
   });
 });

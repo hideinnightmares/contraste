@@ -70,5 +70,6 @@ export function itemFromParts(
     content: parts.content ? stripHtml(parts.content) : undefined,
     publishedAt: parts.publishedAt,
     fetchedAt: fetchedAt.toISOString(),
+    isDemo: source.connector === 'fixture',
   };
 }

@@ -30,6 +30,7 @@ export async function buildBrief(
           url: it.url,
           publishedAt: it.publishedAt,
           text: [it.title, it.summary, full ?? it.content ?? ''].filter(Boolean).join('\n'),
+          isDemo: it.isDemo,
         };
       }),
   );

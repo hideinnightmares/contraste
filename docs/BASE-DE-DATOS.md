@@ -28,6 +28,14 @@ Una nota descartada no se borra: pasa a `rejected`. Los editores se agregan a ma
 
 Las reglas están probadas contra la base real: un visitante y un usuario logueado sin permisos ven solo las publicadas y no pueden editar; un editor ve y publica, y el historial registra quién fue.
 
+## El pipeline
+
+`npm run pipeline -- --write --save` guarda cada borrador en `articles` (con el modelo que lo escribió en `writer`) y el informe en `pipeline_runs`, y vincula las notas con su corrida. Usa la clave secreta `pipeline` (Project Settings > API Keys > Secret keys), en `.env.pipeline` como `SUPABASE_SECRET_KEY`.
+
+Esa clave salta las reglas de acceso: solo va en `.env.pipeline` y, cuando el pipeline corra en GitHub, como secreto del repositorio. Si se filtra, se anula desde el mismo panel y se crea otra; no afecta al resto.
+
+Las notas de demostración solo entran a la base con `--permitir-demo` y quedan con `is_demo = true`: el sitio real no las muestra.
+
 ## Migraciones
 
 Cada cambio de la base es un archivo en `supabase/migrations/`, creado con:

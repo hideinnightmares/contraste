@@ -110,6 +110,9 @@ export const articleSchema = z
     if (a.verification.status === 'disputed' && a.verification.contradictions.length === 0) {
       ctx.addIssue({ code: 'custom', message: 'estado "disputed" sin contradicciones registradas' });
     }
+    if (!a.isDemo && a.sources.some((s) => s.isDemo)) {
+      ctx.addIssue({ code: 'custom', message: 'una nota real no puede citar fuentes de prueba: tiene que estar marcada como demostración' });
+    }
     if (a.sources.length === 0) {
       ctx.addIssue({ code: 'custom', message: 'toda nota publicada indica sus fuentes' });
     }

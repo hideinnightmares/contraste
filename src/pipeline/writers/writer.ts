@@ -36,14 +36,17 @@ Reglas que no se negocian:
 - Diferenciá hechos de interpretación. No opines.
 - Título informativo, sin clickbait, sin signos de exclamación, sin adjetivos sensacionalistas, de hasta 110 caracteres.
 - Bajada de una o dos oraciones que agregue información, no que repita el título.
-- Cada afirmación relevante va en "claims" con los ids de las fuentes que la respaldan (solo ids del dossier).
+- Cada afirmación relevante va en "claims" con los ids de las fuentes que la respaldan, escritos exactamente como en el dossier (F1, F2…).
 - La sección tiene que ser una de: ${categories.map((c) => c.slug).join(', ')}.`;
+
+/** Nombre corto de cada fuente en el dossier: los modelos copian "F2" sin errores; un id largo, no. */
+export const sourceAlias = (index: number) => `F${index + 1}`;
 
 /** Dossier para el redactor: fuentes, estado de verificación y contradicciones. */
 export function renderBrief(brief: ResearchBrief): string {
   const v = brief.verification;
   const sources = brief.sources
-    .map((s) => `<fuente id="${s.id}" tipo="${s.kind}" nombre="${s.name}" publicada="${s.publishedAt}">\n${s.text}\n</fuente>`)
+    .map((s, i) => `<fuente id="${sourceAlias(i)}" tipo="${s.kind}" nombre="${s.name}" publicada="${s.publishedAt}">\n${s.text}\n</fuente>`)
     .join('\n');
   const contradictions = v.contradictions.length
     ? v.contradictions.map((c) => `- ${c.topic}: ${c.detail}`).join('\n')
@@ -61,4 +64,25 @@ ${sources}
 </dossier>
 
 Redactá el borrador siguiendo las reglas.`;
+}
+
+/**
+ * Traduce las fuentes citadas por el borrador a los ids reales del dossier. Acepta el alias
+ * (F1), el id completo, o el id de la fuente configurada si corresponde a un solo ítem (los
+ * ids de ítem son `fuente:url`). Lo que no se puede traducir queda igual, para que el control
+ * posterior lo marque como fuente inexistente.
+ */
+export function resolveSourceIds<T extends { claims: { sourceIds: string[] }[] }>(draft: T, brief: ResearchBrief): T {
+  const resolve = (cited: string): string => {
+    const value = cited.trim();
+    const alias = /^f(\d+)$/i.exec(value);
+    if (alias) return brief.sources[Number(alias[1]) - 1]?.id ?? value;
+    if (brief.sources.some((s) => s.id === value)) return value;
+    const byPrefix = brief.sources.filter((s) => s.id.startsWith(`${value}:`));
+    return byPrefix.length === 1 ? byPrefix[0].id : value;
+  };
+  return {
+    ...draft,
+    claims: draft.claims.map((c) => ({ ...c, sourceIds: [...new Set(c.sourceIds.map(resolve))] })),
+  };
 }
