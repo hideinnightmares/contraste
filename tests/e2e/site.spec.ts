@@ -290,3 +290,25 @@ test.describe('SEO técnico', () => {
     await expectNoA11yViolations(page, 'últimas');
   });
 });
+
+test.describe('mesa de redacción', () => {
+  // Sin aceptar cookies a propósito: el aviso no tiene que aparecer en la mesa.
+  test('sin sesión pide ingresar, fuera de buscadores y sin el marco del diario', async ({ page }) => {
+    const errors = collectErrors(page);
+    await page.goto('/redaccion');
+    await expect(page.getByRole('heading', { level: 1, name: 'Mesa de redacción' })).toBeVisible();
+    await expect(page.getByLabel('Email')).toBeVisible();
+    await expect(page.getByLabel('Contraseña')).toHaveAttribute('type', 'password');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+    await expect(page.getByRole('navigation', { name: 'Navegación principal' })).toHaveCount(0);
+    await expect(page.getByRole('complementary', { name: 'Publicidad' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Tu privacidad' })).toHaveCount(0);
+    await expectNoA11yViolations(page, 'mesa de redacción');
+    expect(errors).toEqual([]);
+  });
+
+  test('no figura en el mapa del sitio', async ({ request }) => {
+    const sitemap = await (await request.get('/sitemap.xml')).text();
+    expect(sitemap).not.toContain('/redaccion');
+  });
+});

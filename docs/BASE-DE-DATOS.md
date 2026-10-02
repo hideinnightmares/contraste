@@ -24,7 +24,9 @@ Todas las tablas tienen RLS. El proyecto se creó con "Automatically expose new 
 | Pipeline (`service_role`, clave secreta) | Crear y actualizar notas e informes |
 | Nadie por la API | Borrar notas, escribir el historial, agregar editores |
 
-Una nota descartada no se borra: pasa a `rejected`. Los editores se agregan a mano, desde el panel o con SQL.
+Una nota descartada no se borra: pasa a `rejected`. Los editores se agregan a mano, desde el panel o con SQL (ver `docs/MESA-DE-REDACCION.md`).
+
+Además de quién accede, la base controla qué se guarda: el formato de cada nota (un `CHECK` con el esquema JSON de `supabase/esquema-nota.json`) y las reglas de publicación (trigger `private.articles_reglas`: slug fijo, correcciones visibles, nada sin verificar publicado, fechas y aprobación humana). Al publicar, despublicar o corregir, el trigger `private.articles_pedir_armado` pide el armado del sitio a GitHub con `pg_net`. Detalle en `docs/MESA-DE-REDACCION.md`.
 
 Las reglas están probadas contra la base real: un visitante y un usuario logueado sin permisos ven solo las publicadas y no pueden editar; un editor ve y publica, y el historial registra quién fue.
 
@@ -46,7 +48,7 @@ El sitio no consulta la base mientras se arma página por página. Antes de `nex
 - una nota despublicada desaparece en el armado siguiente, porque ya no figura en el índice;
 - si la base no responde, el armado falla: publicar con una foto vieja podría volver a mostrar una nota despublicada.
 
-Usa la clave **publicable** (`SUPABASE_PUBLISHABLE_KEY` en `.env.production`): es pública por diseño y, por las reglas de acceso, solo lee notas publicadas con fecha cumplida. Probado desde internet: no ve borradores, no lee los informes del pipeline y no puede escribir.
+Usa la clave **publicable** (`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` en `.env.production`): es pública por diseño y, por las reglas de acceso, solo lee notas publicadas con fecha cumplida. Probado desde internet: no ve borradores, no lee los informes del pipeline y no puede escribir.
 
 Con contenido real (`CONTRASTE_DEMO_MODE=false`), las notas de demostración nunca aparecen aunque estén publicadas en la base.
 

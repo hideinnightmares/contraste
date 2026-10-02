@@ -6,9 +6,9 @@ import { SiteHeader } from '@/components/header/SiteHeader';
 import { SiteFooter } from '@/components/footer/SiteFooter';
 import { AdSlot } from '@/components/ads/AdSlot';
 import { AdSenseLoader } from '@/components/ads/AdSenseLoader';
-import { ConsentProvider } from '@/components/privacy/ConsentProvider';
 import { ConsentBanner } from '@/components/privacy/ConsentBanner';
 import { RevealObserver } from '@/components/motion/RevealObserver';
+import { SiteFrame } from '@/components/layout/SiteFrame';
 import { THEME_STORAGE_KEY } from '@/components/header/theme';
 import './globals.css';
 
@@ -75,20 +75,20 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         <script dangerouslySetInnerHTML={{ __html: bootScript }} />
       </head>
       <body>
-        <ConsentProvider>
-          <a className="skip-link" href="#contenido">
-            Saltar al contenido
-          </a>
-          <SiteHeader />
-          <AdSlot position="top-banner" variant="band" />
-          <main id="contenido" tabIndex={-1}>
-            {children}
-          </main>
-          <SiteFooter />
-          <ConsentBanner />
-          <AdSenseLoader />
-          <RevealObserver />
-        </ConsentProvider>
+        <SiteFrame
+          header={<SiteHeader />}
+          topAd={<AdSlot position="top-banner" variant="band" />}
+          footer={<SiteFooter />}
+          extras={
+            <>
+              <ConsentBanner />
+              <AdSenseLoader />
+              <RevealObserver />
+            </>
+          }
+        >
+          {children}
+        </SiteFrame>
       </body>
     </html>
   );

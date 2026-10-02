@@ -56,6 +56,9 @@ Las páginas no cambian.
 | `/tema/[[...ruta]]` | `/tema` es el índice de temas; `/tema/clima` y `/tema/clima/pagina/2`, cada tema con al menos `MIN_NOTES_FOR_TAG_PAGE` notas (3). Los demás temas enlazan a `/buscar?tema=…` |
 | `/buscar` | Página fija; los criterios van en la dirección y la búsqueda corre en el navegador |
 | `/indice-busqueda.json` | Índice del buscador: resumen y texto plano de cada nota (`SearchDocument`) |
+| `/redaccion` | Mesa de redacción: página fija que corre en el navegador y lee y escribe en la base con la sesión del editor (ver `docs/MESA-DE-REDACCION.md`) |
+
+**Marco del diario.** El encabezado, la publicidad superior, el pie y el aviso de cookies los pone `SiteFrame` (`src/components/layout/SiteFrame.tsx`) desde el layout raíz, salvo en las rutas de `WITHOUT_FRAME` (la mesa de redacción). No se usan grupos de rutas para esto: cada layout extra agrega un archivo de navegación por página al armado.
 
 Notas, secciones y temas usan rutas opcionales (`[[...]]`) que siempre generan al menos una página (`/nota`, `/seccion/x`, `/tema`): con `output: 'export'`, Next.js corta el armado si una ruta dinámica no genera ninguna, y eso pasaría con la base vacía o con pocos temas.
 
@@ -73,6 +76,7 @@ Las direcciones que no se generaron no existen: Cloudflare responde `out/404.htm
 
 - Encabezados en `public/_headers` (Cloudflare los aplica): `nosniff`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, HSTS.
 - Falta una Content Security Policy. Se recomienda agregarla al activar AdSense, con hashes de los scripts en línea (en un sitio estático no hay nonces por pedido), incluyendo los dominios que Google documenta para AdSense.
+- La mesa de redacción usa la clave publicable de Supabase y la sesión del editor: lo que puede ver y cambiar lo deciden las reglas de acceso y los triggers de la base, no la página (ver `docs/MESA-DE-REDACCION.md`). La sesión se guarda en el navegador, en el dominio del sitio: antes de cargar scripts de terceros (AdSense), separar la mesa en otro dominio o dejar de guardar la sesión (ver `docs/ADSENSE.md`).
 - El sitio publicado no tiene código de servidor ni APIs que atacar ni sobrecargar. Cuando se habilite el newsletter, su alta irá en una función aparte con validación y límite de pedidos (ver `docs/NEWSLETTER.md`).
 - El índice de búsqueda publica solo lo que ya se ve en las notas (resumen y texto), nunca las fuentes ni los datos de revisión.
 - El JSON-LD se serializa escapando `<`.

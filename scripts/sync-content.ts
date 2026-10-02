@@ -36,10 +36,12 @@ async function main() {
     console.log('Contenido: dataset de demostración (CONTENT_SOURCE no es "database"); no se consulta la base.');
     return;
   }
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) throw new Error('Con CONTENT_SOURCE=database hacen falta SUPABASE_URL y SUPABASE_PUBLISHABLE_KEY (en .env.production).');
-  if (!key.startsWith('sb_publishable_')) throw new Error('SUPABASE_PUBLISHABLE_KEY tiene que ser la clave publicable (sb_publishable_...).');
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) {
+    throw new Error('Con CONTENT_SOURCE=database hacen falta NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (en .env.production).');
+  }
+  if (!key.startsWith('sb_publishable_')) throw new Error('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY tiene que ser la clave publicable (sb_publishable_...).');
 
   const db = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 

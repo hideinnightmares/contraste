@@ -1,4 +1,5 @@
 import { editorial } from '@/config/editorial';
+import { confidenceLabel } from '@/domain/labels';
 import type { Confidence } from '@/domain/types';
 import type { DraftArticle, GroundingReport, ReviewDecision, VerificationReport } from '../types';
 
@@ -30,7 +31,7 @@ export function decideReview(input: {
   if (v.independentSources < rules.minIndependentSources) {
     blockers.push(`Hay ${v.independentSources} fuentes independientes; se exigen ${rules.minIndependentSources}.`);
   }
-  if (confidenceRank[v.confidence] < confidenceRank[rules.minConfidence]) blockers.push(`Confianza ${v.confidence}, por debajo de la exigida.`);
+  if (confidenceRank[v.confidence] < confidenceRank[rules.minConfidence]) blockers.push(`${confidenceLabel[v.confidence]}, por debajo de la exigida.`);
   if (grounding && !grounding.ok) {
     if (grounding.ungroundedFigures.length) blockers.push(`Cifras sin respaldo en las fuentes: ${grounding.ungroundedFigures.join(', ')}.`);
     if (grounding.ungroundedNames.length) blockers.push(`Nombres sin respaldo en las fuentes: ${grounding.ungroundedNames.join(', ')}.`);
