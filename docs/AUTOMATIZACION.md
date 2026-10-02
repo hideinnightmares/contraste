@@ -193,10 +193,10 @@ Variables opcionales:
 **Cuándo falla.** La corrida termina con error, y GitHub avisa por email, en estos casos:
 
 - no respondió ninguna fuente;
-- el redactor falló por algo que no se arregla solo (por ejemplo, una clave inválida);
+- el redactor falló por algo que no se arregla solo (por ejemplo, una clave inválida) y no salió ningún borrador;
 - un borrador no se pudo guardar.
 
-Que Gemini se quede sin cupo no es un error: pasa en el plan gratis, y el hecho se redacta en la próxima corrida.
+Que Gemini se quede sin cupo no es un error: pasa en el plan gratis, y el hecho se redacta en la próxima corrida. Que bloquee el pedido de una nota tampoco, si salieron otros borradores: esa nota queda en la mesa para revisar.
 
 **Cupo de minutos:** unos 3 minutos facturados por corrida (ver [DESPLIEGUE.md](DESPLIEGUE.md#cuánto-se-puede-publicar)).
 

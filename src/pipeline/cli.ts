@@ -36,7 +36,7 @@ import { SupabaseStore, supabaseFromEnv } from './storage/supabase';
 import { withoutFeedText } from './report';
 import { itemsToRemember, loadMemory, saveMemory } from './memory';
 import type { ClusterOutcome } from './types';
-import { demoSources } from '@/config/sources';
+import { demoSources, realSources } from '@/config/sources';
 import { editorial } from '@/config/editorial';
 
 // Las claves de los redactores viven en .env.pipeline, que el sitio nunca lee: si
@@ -117,8 +117,9 @@ async function main() {
   const memory = memoryFile ? await loadMemory(memoryFile) : null;
   if (memory?.warning) console.log(`  ! ${memory.warning}`);
 
+  const connectors = connectorsFor(demo ? demoSources : realSources);
   const report = await runPipeline({
-    connectors: demo ? connectorsFor(demoSources) : undefined,
+    connectors,
     previousItems: memory?.items,
     writer,
     fetcher,
@@ -149,16 +150,17 @@ async function main() {
     `\n${count(waiting, 'hecho', 'hechos')} con una sola fuente, en espera de confirmación. ${count(covered, 'ya cubierto', 'ya cubiertos')} por notas anteriores.`,
   );
 
-  if (store) {
-    const runId = await store.recordRun(report);
-    console.log(`\nInforme guardado en la base (pipeline_runs ${runId}).`);
-  }
-
+  // Primero la memoria: no depende de la base.
   if (memoryFile) {
     const since = new Date(new Date(report.startedAt).getTime() - DEFAULT_SINCE_HOURS * 3_600_000);
     const items = itemsToRemember(report, since);
     await saveMemory(memoryFile, items);
     console.log(`\nMemoria para la próxima corrida: ${items.length} ítems en ${memoryFile}`);
+  }
+
+  if (store) {
+    const runId = await store.recordRun(report);
+    console.log(`\nInforme guardado en la base (pipeline_runs ${runId}).`);
   }
 
   const dir = path.join(process.cwd(), '.data', 'pipeline', 'informes');
@@ -169,10 +171,12 @@ async function main() {
 
   // Lo que necesita que alguien lo mire hace fallar la corrida, para que se vea en GitHub Actions.
   // Un redactor sin cupo no: en el plan gratis pasa, y el hecho se reintenta en la próxima.
+  // Un pedido que el proveedor bloquea tampoco, si otros borradores salieron: es de esa nota.
   const problems: string[] = [];
-  if (report.collected === 0 && report.failedSources.length > 0) problems.push('no respondió ninguna fuente');
-  if (report.outcomes.some((o) => o.stage === 'writer_failed' && o.review.decision === 'human_review')) {
-    problems.push('el redactor falló por algo que no se arregla solo (revisá la clave o el pedido)');
+  if (connectors.length > 0 && report.failedSources.length >= connectors.length) problems.push('no respondió ninguna fuente');
+  const drafted = report.outcomes.some((o) => o.draft !== null);
+  if (!drafted && report.outcomes.some((o) => o.stage === 'writer_failed' && o.review.decision === 'human_review')) {
+    problems.push('el redactor falló por algo que no se arregla solo (revisá la clave)');
   }
   if (report.outcomes.some((o) => o.stage === 'save_failed')) problems.push('hubo borradores que no se pudieron guardar');
   if (problems.length > 0) {
