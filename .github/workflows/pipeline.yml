@@ -47,6 +47,16 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      # Memoria entre corridas: título, resumen y dirección de las notas de las últimas 24 horas
+      # (no su texto). Cada feed muestra solo sus últimas notas; con la memoria, un hecho que dos
+      # medios publican con horas de diferencia se puede contrastar. Ver src/pipeline/memory.ts.
+      - name: Recuperar la memoria de la corrida anterior
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/pipeline
+          key: pipeline-memoria-${{ github.run_id }}
+          restore-keys: pipeline-memoria-
+
       - name: Correr el pipeline
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -54,4 +64,12 @@ jobs:
           CONTRASTE_MAX_BORRADORES_POR_CORRIDA: ${{ vars.CONTRASTE_MAX_BORRADORES_POR_CORRIDA || 4 }}
           CONTRASTE_REVIEW_MODE: ${{ vars.CONTRASTE_REVIEW_MODE || 'human' }}
           CONTRASTE_GEMINI_PLAN: ${{ vars.CONTRASTE_GEMINI_PLAN }}
+          CONTRASTE_MEMORIA: .cache/pipeline/memoria.json
         run: npm run pipeline -- --write --save
+
+      - name: Guardar la memoria para la próxima corrida
+        if: always() && hashFiles('.cache/pipeline/memoria.json') != ''
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/pipeline
+          key: pipeline-memoria-${{ github.run_id }}

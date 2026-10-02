@@ -52,3 +52,14 @@ export const COMMON_FEED_PATHS = [
   '/index.xml',
   '/atom.xml',
 ];
+
+/** Si dos direcciones son del mismo sitio: el mismo dominio, con o sin `www.`, o un subdominio suyo. */
+export function sameSite(a: string, b: string): boolean {
+  try {
+    const host = (url: string) => new URL(url).hostname.toLowerCase().replace(/^www\./, '');
+    const [ha, hb] = [host(a), host(b)];
+    return ha === hb || ha.endsWith(`.${hb}`) || hb.endsWith(`.${ha}`);
+  } catch {
+    return false;
+  }
+}

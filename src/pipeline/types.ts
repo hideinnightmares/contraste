@@ -144,6 +144,8 @@ export interface PipelineReport {
   startedAt: string;
   finishedAt: string;
   collected: number;
+  /** Coberturas en vivo y páginas de servicio descartadas (`editorial.collection.skipTitles`). */
+  skipped: number;
   failedSources: { sourceId: string; error: string }[];
   clusters: number;
   outcomes: ClusterOutcome[];

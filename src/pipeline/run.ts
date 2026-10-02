@@ -1,3 +1,4 @@
+import { editorial } from '@/config/editorial';
 import { realSources, sourceDefinitions } from '@/config/sources';
 import type { SourceConnector } from './sources/connector';
 import { RssConnector } from './sources/rss';
@@ -14,10 +15,18 @@ import type { ArticleWriter } from './writers/writer';
 import { WriterError, resolveSourceIds } from './writers/writer';
 import type { ClusterOutcome, PipelineReport, SourceDefinition, SourceItem, StoryCluster, VerificationReport } from './types';
 
+/** Ventana de recopilación, en horas. */
+export const DEFAULT_SINCE_HOURS = 24;
+
 export interface PipelineOptions {
   /** Ventana de recopilación. */
   sinceHours?: number;
   connectors?: SourceConnector[];
+  /**
+   * Ítems de corridas anteriores (memory.ts). Cada feed muestra solo sus últimas notas: con la
+   * memoria, un hecho que dos medios publican con horas de diferencia se puede contrastar.
+   */
+  previousItems?: SourceItem[];
   /** Sin redactor, el pipeline llega hasta la verificación y deja todo en espera. */
   writer?: ArticleWriter | null;
   /** Lee el texto completo de cada nota (sources/article.ts). Sin él, se usa solo el feed. */
@@ -44,6 +53,11 @@ export function connectorsFor(definitions: SourceDefinition[] = realSources): So
   return definitions
     .filter((d) => d.enabled)
     .map((d) => (d.connector === 'rss' ? new RssConnector(d) : new FixtureConnector(d)));
+}
+
+/** Cobertura en vivo o página de servicio: no es un hecho para contrastar. */
+export function isRollingCoverage(item: Pick<SourceItem, 'title'>): boolean {
+  return editorial.collection.skipTitles.some((pattern) => pattern.test(item.title));
 }
 
 interface Candidate {
@@ -80,7 +94,7 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
   const now = options.now ?? (() => new Date());
   const log = options.log ?? (() => {});
   const startedAt = now();
-  const since = new Date(startedAt.getTime() - (options.sinceHours ?? 24) * 3_600_000);
+  const since = new Date(startedAt.getTime() - (options.sinceHours ?? DEFAULT_SINCE_HOURS) * 3_600_000);
   const connectors = options.connectors ?? connectorsFor();
 
   // Recopilación, con cada fuente aislada.
@@ -101,7 +115,27 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
   // Un mismo ítem puede llegar dos veces de la misma fuente.
   const byId = new Map<string, SourceItem>();
   for (const it of batches.flat()) byId.set(it.id, it);
-  const items = [...byId.values()];
+  // Lo recordado de corridas anteriores, si su fuente sigue activa. El tipo y el origen salen de
+  // la configuración actual, por si cambió.
+  const active = new Map(connectors.map((c) => [c.source.id, c.source]));
+  let remembered = 0;
+  for (const it of options.previousItems ?? []) {
+    const source = active.get(it.sourceId);
+    if (!source || byId.has(it.id) || new Date(it.publishedAt) < since) continue;
+    byId.set(it.id, {
+      ...it,
+      sourceName: source.name,
+      sourceKind: source.kind,
+      origin: source.origin,
+      discoveryOnly: source.discoveryOnly ?? source.kind === 'aggregator',
+    });
+    remembered++;
+  }
+  if (remembered > 0) log(`${remembered} ítems de corridas anteriores que los feeds ya no muestran`);
+  const collected = [...byId.values()];
+  const items = collected.filter((it) => !isRollingCoverage(it));
+  const skipped = collected.length - items.length;
+  if (skipped > 0) log(`${skipped} coberturas en vivo o páginas de servicio descartadas`);
 
   const clusters = clusterItems(items);
   log(`${items.length} ítems en ${clusters.length} hechos`);
@@ -233,6 +267,7 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
     startedAt: startedAt.toISOString(),
     finishedAt: now().toISOString(),
     collected: items.length,
+    skipped,
     failedSources,
     clusters: clusters.length,
     outcomes,

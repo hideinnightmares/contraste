@@ -7,10 +7,13 @@
  * - avisa si el sitio le prohíbe a Google usar sus notas para Gemini (Google-Extended): con Gemini
  *   en el plan gratis, de ese sitio el redactor recibe solo el resumen del feed;
  * - si el feed no anda, busca los que declara la portada del sitio y prueba direcciones
- *   habituales, para sugerir la correcta.
+ *   habituales, para sugerir la correcta (solo del mismo sitio).
  *
- *   npm run fuentes:probar                → todas las fuentes reales
- *   npm run fuentes:probar -- clarin bcra → solo esas
+ *   npm run fuentes:probar                    → todas las fuentes reales
+ *   npm run fuentes:probar -- clarin bcra     → solo esas
+ *   npm run fuentes:probar -- --descubrir     → además, lista los otros feeds que declara cada sitio
+ *
+ * Las fuentes deshabilitadas se prueban sin buscar alternativas, salvo que se las nombre.
  *
  * Termina con error si falla el feed de alguna fuente habilitada. Necesita salida a internet:
  * también corre en GitHub (Actions > Probar las fuentes).
@@ -21,7 +24,7 @@ import { realSources } from '../src/config/sources';
 import { parseFeed } from '../src/pipeline/sources/rss';
 import { userAgent } from '../src/pipeline/sources/http';
 import { WebArticleFetcher, type Permission, type SkipReason } from '../src/pipeline/sources/article';
-import { COMMON_FEED_PATHS, feedLinks } from '../src/pipeline/sources/discover';
+import { COMMON_FEED_PATHS, feedLinks, sameSite } from '../src/pipeline/sources/discover';
 import { GEMINI_OPT_OUT_AGENT } from '../src/pipeline/writers/gemini';
 import type { SourceDefinition } from '../src/pipeline/types';
 
@@ -45,6 +48,7 @@ type FeedCheck = FeedOk | { ok: false; error: string; html?: string; finalUrl?: 
 interface Result {
   source: SourceDefinition;
   feed: FeedCheck;
+  /** Feeds que funcionan en el sitio: alternativas si el configurado falla, u otros con --descubrir. */
   suggestions: { url: string; feed: FeedOk }[];
   reading: { chars: number } | { skipped: SkipReason } | null;
   gemini: Permission | null;
@@ -78,12 +82,16 @@ async function checkFeed(url: string): Promise<FeedCheck> {
   return { ok: true, items: entries.length, newest: dated[0]?.publishedAt ?? null, sample: { url: sample.url, title: sample.title } };
 }
 
-/** Feeds que funcionan en el sitio de la fuente: los que declara la portada y direcciones habituales. */
-async function suggest(source: SourceDefinition): Promise<{ url: string; feed: FeedOk }[]> {
+/**
+ * Feeds que funcionan en el sitio de la fuente: los que declara o enlaza la portada y, si se
+ * buscan alternativas, direcciones habituales. Solo del mismo sitio.
+ */
+async function suggest(source: SourceDefinition, { commonPaths }: { commonPaths: boolean }): Promise<{ url: string; feed: FeedOk }[]> {
   const site = source.site ?? `${new URL(source.url).origin}/`;
   const queue: string[] = [];
   const seen = new Set<string>([source.url]);
-  const add = (urls: string[]) => urls.filter((u) => !seen.has(u)).forEach((u) => (seen.add(u), queue.push(u)));
+  const add = (urls: string[]) =>
+    urls.filter((u) => !seen.has(u) && sameSite(u, site)).forEach((u) => (seen.add(u), queue.push(u)));
 
   try {
     const res = await fetch(site, { headers: { 'User-Agent': userAgent(), Accept: 'text/html' }, signal: AbortSignal.timeout(TIMEOUT_MS) });
@@ -95,7 +103,7 @@ async function suggest(source: SourceDefinition): Promise<{ url: string; feed: F
   } catch {
     // Sin portada, quedan las direcciones habituales.
   }
-  add(COMMON_FEED_PATHS.map((p) => new URL(p, site).toString()));
+  if (commonPaths) add(COMMON_FEED_PATHS.map((p) => new URL(p, site).toString()));
 
   const found: { url: string; feed: FeedOk }[] = [];
   for (let tries = 0; queue.length > 0 && tries < MAX_CANDIDATES; tries++) {
@@ -112,13 +120,14 @@ async function suggest(source: SourceDefinition): Promise<{ url: string; feed: F
   return found.sort((a, b) => (b.feed.newest ?? '').localeCompare(a.feed.newest ?? ''));
 }
 
-async function probe(source: SourceDefinition): Promise<Result> {
+async function probe(source: SourceDefinition, { discover, named }: { discover: boolean; named: boolean }): Promise<Result> {
   const feed = await checkFeed(source.url);
   const result: Result = { source, feed, suggestions: [], reading: null, gemini: null };
   if (!feed.ok) {
-    result.suggestions = await suggest(source);
+    if (source.enabled || named) result.suggestions = await suggest(source, { commonPaths: true });
     return result;
   }
+  if (discover) result.suggestions = await suggest(source, { commonPaths: false });
   const reader = new WebArticleFetcher();
   const text = await reader.fetchText(feed.sample.url);
   result.reading = text ? { chars: text.length } : { skipped: reader.skipped[0]?.reason ?? 'error' };
@@ -158,7 +167,8 @@ const formatNumber = (n: number) => n.toLocaleString('es-AR');
 function report(r: Result): string[] {
   const lines = [`\n▸ ${r.source.name} (${r.source.id})${r.source.enabled ? '' : ' · deshabilitada'}`, `  Feed: ${r.source.url}`];
   if (!r.feed.ok) {
-    lines.push(`  ✗ El feed no anda: ${r.feed.error}.`);
+    lines.push(`  ${r.source.enabled ? '✗' : '·'} El feed no anda: ${r.feed.error}.`);
+    if (!r.source.enabled) return lines;
     if (r.suggestions.length === 0) lines.push('    No se encontró otro feed en el sitio.');
     else {
       lines.push('    Feeds que funcionan en el sitio:');
@@ -171,30 +181,37 @@ function report(r: Result): string[] {
   if (r.reading && 'chars' in r.reading) lines.push(`  ✓ Nota de ejemplo leída: ${formatNumber(r.reading.chars)} caracteres («${r.feed.sample.title}»).`);
   else if (r.reading) lines.push(`  ✗ Nota de ejemplo no leída: ${READING_LABEL[r.reading.skipped]} (${r.feed.sample.url}).`);
   if (r.gemini) lines.push(`  ${r.gemini === 'ok' ? '✓' : '·'} Gemini (plan gratis): ${GEMINI_LABEL[r.gemini]}.`);
+  if (r.suggestions.length > 0) {
+    lines.push('    Otros feeds del sitio:');
+    for (const s of r.suggestions.slice(0, 12)) lines.push(`      ${s.url} (${s.feed.items} notas, la más nueva ${age(s.feed.newest)})`);
+  }
   return lines;
 }
 
 function summaryTable(results: Result[]): string {
   const rows = results.map((r) => {
+    const name = r.source.enabled ? r.source.name : `${r.source.name} (deshabilitada)`;
     if (!r.feed.ok) {
-      const hint = r.suggestions[0] ? `probar ${r.suggestions[0].url}` : 'sin alternativas';
-      return `| ${r.source.name} | ✗ ${r.feed.error} | | | ${hint} | |`;
+      const hint = r.suggestions[0] ? `probar ${r.suggestions[0].url}` : r.source.enabled ? 'sin alternativas' : '';
+      return `| ${name} | ✗ ${r.feed.error} | | | ${hint} | |`;
     }
     const reading = r.reading && 'chars' in r.reading ? `✓ ${formatNumber(r.reading.chars)} car.` : r.reading ? `✗ ${READING_LABEL[r.reading.skipped]}` : '';
-    return `| ${r.source.name} | ✓ | ${r.feed.items} | ${age(r.feed.newest)} | ${reading} | ${r.gemini ? GEMINI_LABEL[r.gemini] : ''} |`;
+    return `| ${name} | ✓ | ${r.feed.items} | ${age(r.feed.newest)} | ${reading} | ${r.gemini ? GEMINI_LABEL[r.gemini] : ''} |`;
   });
   return ['| Fuente | Feed | Notas | La más nueva | Lectura de una nota | Gemini gratis |', '| --- | --- | --- | --- | --- | --- |', ...rows].join('\n');
 }
 
 async function main() {
-  const wanted = process.argv.slice(2).filter((a) => !a.startsWith('-'));
+  const args = process.argv.slice(2);
+  const discover = args.includes('--descubrir');
+  const wanted = args.filter((a) => !a.startsWith('-'));
   const unknown = wanted.filter((id) => !realSources.some((s) => s.id === id));
   if (unknown.length > 0) throw new Error(`No hay fuentes con id ${unknown.join(', ')}. Ids: ${realSources.map((s) => s.id).join(', ')}.`);
   const sources = wanted.length > 0 ? realSources.filter((s) => wanted.includes(s.id)) : realSources;
 
   console.log(`Probando ${sources.length} fuentes como ${userAgent()}…`);
   // Cada fuente es un sitio distinto: se prueban todas a la vez.
-  const results = await Promise.all(sources.map(probe));
+  const results = await Promise.all(sources.map((source) => probe(source, { discover, named: wanted.includes(source.id) })));
   for (const r of results) console.log(report(r).join('\n'));
 
   const failed = results.filter((r) => r.source.enabled && !r.feed.ok);

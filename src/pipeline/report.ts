@@ -35,6 +35,7 @@ export interface StoredReport {
   startedAt: string;
   finishedAt: string;
   collected: number;
+  skipped: number;
   clusters: number;
   failedSources: PipelineReport['failedSources'];
   /** Cantidad de hechos en cada etapa. */
@@ -58,6 +59,7 @@ export function compactReport(report: PipelineReport): StoredReport {
     startedAt: report.startedAt,
     finishedAt: report.finishedAt,
     collected: report.collected,
+    skipped: report.skipped,
     clusters: report.clusters,
     failedSources: report.failedSources,
     stages,

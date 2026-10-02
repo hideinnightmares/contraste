@@ -43,8 +43,9 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      # En un pull request lista también los otros feeds de cada sitio, para elegir el mejor.
       - name: Probar las fuentes
-        run: npm run fuentes:probar
+        run: npm run fuentes:probar -- ${{ github.event_name == 'pull_request' && '--descubrir' || '' }}
 
       # En un pull request, también un ensayo: qué hechos encuentra el pipeline con las fuentes
       # nuevas. Lee notas completas de pocos hechos (el máximo por corrida) y no guarda nada.

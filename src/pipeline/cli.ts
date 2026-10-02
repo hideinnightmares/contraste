@@ -13,6 +13,9 @@
  *                                      prueba (quedan marcadas como demostración)
  *   npm run pipeline -- --detalle    → muestra también los hechos de una sola fuente
  *
+ * Con CONTRASTE_MEMORIA (la ruta de un archivo, por ejemplo .cache/pipeline/memoria.json) recuerda
+ * entre corridas los ítems de las últimas 24 horas, sin el texto de las notas (ver memory.ts).
+ *
  * Redacta como mucho CONTRASTE_MAX_BORRADORES_POR_CORRIDA hechos (4 si no se define), los que
  * cubren más fuentes independientes; el resto queda para la próxima corrida.
  *
@@ -25,12 +28,13 @@ import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { loadEnvConfig } from '@next/env';
-import { connectorsFor, runPipeline } from './run';
+import { DEFAULT_SINCE_HOURS, connectorsFor, runPipeline } from './run';
 import { createWriter } from './writers';
 import { FilePublisher, type Publisher } from './stages/publish';
 import { WebArticleFetcher } from './sources/article';
 import { SupabaseStore, supabaseFromEnv } from './storage/supabase';
 import { withoutFeedText } from './report';
+import { itemsToRemember, loadMemory, saveMemory } from './memory';
 import type { ClusterOutcome } from './types';
 import { demoSources } from '@/config/sources';
 import { editorial } from '@/config/editorial';
@@ -49,6 +53,8 @@ const save = args.has('--save');
 const allowDemo = args.has('--permitir-demo');
 const demo = args.has('--prueba');
 const detail = demo || args.has('--detalle');
+// Las fuentes de prueba no se recuerdan: son ficticias y no cambian.
+const memoryFile = demo ? null : process.env.CONTRASTE_MEMORIA?.trim() || null;
 
 const DEFAULT_MAX_DRAFTS = 4;
 
@@ -108,8 +114,12 @@ async function main() {
   // del redactor entrena con lo que recibe, también respeta lo que cada sitio le prohíbe a él.
   const fetcher = new WebArticleFetcher({ alsoRespect: writer?.optOutAgents ?? [], log: (m) => console.log(`  · ${m}`) });
 
+  const memory = memoryFile ? await loadMemory(memoryFile) : null;
+  if (memory?.warning) console.log(`  ! ${memory.warning}`);
+
   const report = await runPipeline({
     connectors: demo ? connectorsFor(demoSources) : undefined,
+    previousItems: memory?.items,
     writer,
     fetcher,
     publisher,
@@ -142,6 +152,13 @@ async function main() {
   if (store) {
     const runId = await store.recordRun(report);
     console.log(`\nInforme guardado en la base (pipeline_runs ${runId}).`);
+  }
+
+  if (memoryFile) {
+    const since = new Date(new Date(report.startedAt).getTime() - DEFAULT_SINCE_HOURS * 3_600_000);
+    const items = itemsToRemember(report, since);
+    await saveMemory(memoryFile, items);
+    console.log(`\nMemoria para la próxima corrida: ${items.length} ítems en ${memoryFile}`);
   }
 
   const dir = path.join(process.cwd(), '.data', 'pipeline', 'informes');

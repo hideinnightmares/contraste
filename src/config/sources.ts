@@ -55,7 +55,7 @@ export const realSources: SourceDefinition[] = [
     kind: 'local_media',
     origin: 'pagina12',
     connector: 'rss',
-    url: 'https://www.pagina12.com.ar/rss/portada',
+    url: 'https://www.pagina12.com.ar/arc/outboundfeeds/rss/?outputType=xml',
     site: 'https://www.pagina12.com.ar/',
     aliases: ['Página 12', 'Página12'],
     enabled: true,
@@ -118,15 +118,17 @@ export const realSources: SourceDefinition[] = [
     enabled: true,
   },
 
-  // Fuentes oficiales: el redactor apoya la nota en ellas y las nombra primero.
+  // Fuentes oficiales: el redactor apoya la nota en ellas y las nombra primero. El Boletín
+  // Oficial, el INDEC y el BCRA no publican feeds (probado el 2 de octubre de 2026): quedan
+  // deshabilitados, con la dirección de su página de novedades, hasta tener un conector que la lea.
   {
     id: 'gobierno-nacional',
     name: 'Gobierno nacional',
     kind: 'official',
     origin: 'gobierno-nacional',
     connector: 'rss',
-    url: 'https://www.argentina.gob.ar/noticias/rss',
-    site: 'https://www.argentina.gob.ar/noticias',
+    url: 'https://www.argentina.gob.ar/rss.xml',
+    site: 'https://www.argentina.gob.ar/',
     enabled: true,
   },
   {
@@ -135,9 +137,9 @@ export const realSources: SourceDefinition[] = [
     kind: 'public_document',
     origin: 'boletin-oficial',
     connector: 'rss',
-    url: 'https://www.boletinoficial.gob.ar/rss/primera',
+    url: 'https://www.boletinoficial.gob.ar/seccion/primera',
     site: 'https://www.boletinoficial.gob.ar/',
-    enabled: true,
+    enabled: false,
   },
   {
     id: 'indec',
@@ -145,9 +147,9 @@ export const realSources: SourceDefinition[] = [
     kind: 'official',
     origin: 'indec',
     connector: 'rss',
-    url: 'https://www.indec.gob.ar/rss',
+    url: 'https://www.indec.gob.ar/indec/web/Institucional-Indec-InformesTecnicos',
     site: 'https://www.indec.gob.ar/',
-    enabled: true,
+    enabled: false,
   },
   {
     id: 'bcra',
@@ -155,9 +157,9 @@ export const realSources: SourceDefinition[] = [
     kind: 'official',
     origin: 'bcra',
     connector: 'rss',
-    url: 'https://www.bcra.gob.ar/rss',
+    url: 'https://www.bcra.gob.ar/buscador-de-comunicaciones/',
     site: 'https://www.bcra.gob.ar/',
-    enabled: true,
+    enabled: false,
   },
 
   // Internacionales en castellano.
