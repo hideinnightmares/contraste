@@ -37,6 +37,9 @@ export default async function LatestPage() {
         <PageHeader title="Últimas noticias" description="Todo lo publicado, en orden cronológico. Sin ranking ni selección editorial." />
         <div className={styles.layout}>
           <div className={styles.main}>
+            {articles.length === 0 && (
+              <p className={styles.empty}>Todavía no hay notas publicadas. Aparecen acá apenas la redacción aprueba la primera.</p>
+            )}
             {[...days.entries()].map(([day, items]) => {
               const label = day === today ? 'Hoy' : day === yesterday ? 'Ayer' : formatLongDate(items[0].publishedAt);
               const id = `dia-${day.replace(/\//g, '-')}`;

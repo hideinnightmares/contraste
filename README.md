@@ -69,7 +69,7 @@ Nada de esto se puede completar sin datos o decisiones del responsable del medio
 - **Datos institucionales**: razón social, CUIT, domicilio y emails en `src/config/site.ts`. Hoy se muestran como `[pendiente]`.
 - **Revisión legal** de privacidad, términos y cookies por un profesional matriculado (ver `docs/PRIVACIDAD-Y-LEGAL.md`).
 - **Fuentes reales**: URLs de feeds con permiso de uso en `src/config/sources.ts`.
-- **Base de datos o CMS**: implementar `ArticleRepository` (ver `docs/ARQUITECTURA.md`).
+- **Mesa de redacción** para aprobar borradores desde el navegador. La base y la lectura desde el sitio ya están (ver `docs/BASE-DE-DATOS.md`).
 - **Newsletter**: proveedor de email y la función que guarde suscripciones (ver `docs/NEWSLETTER.md`).
 - **Repositorio en GitHub** con el token de Cloudflare, para publicar solo (ver `docs/DESPLIEGUE.md`).
 - **AdSense**: ID de editor, IDs de bloques y una plataforma de consentimiento certificada por Google si hay tráfico europeo (ver `docs/ADSENSE.md`).

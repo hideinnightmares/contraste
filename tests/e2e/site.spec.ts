@@ -252,6 +252,22 @@ test.describe('SEO técnico', () => {
     expect((await request.get('/seccion/economia/pagina/1')).status()).toBe(404);
   });
 
+  test('/tema lista los temas con página propia y /nota lleva a las últimas', async ({ page }) => {
+    await dismissConsent(page);
+    const res = await page.goto('/tema');
+    expect(res?.status()).toBe(200);
+    await expect(page.getByRole('heading', { level: 1, name: 'Temas' })).toBeVisible();
+    const first = page.locator('main').getByRole('link').filter({ hasText: /\d/ }).first();
+    await expect(first).toHaveAttribute('href', /^\/tema\/[a-z0-9-]+$/);
+    await first.click();
+    await expect(page).toHaveURL(/\/tema\/[a-z0-9-]+$/);
+    await expect(page.getByRole('navigation', { name: /ruta/i }).getByRole('link', { name: 'Temas' })).toBeVisible();
+
+    const notas = await page.goto('/nota');
+    expect(notas?.status()).toBe(200);
+    await expect(page.locator('main').getByRole('link', { name: 'Ir a Últimas noticias' })).toHaveAttribute('href', '/ultimas');
+  });
+
   test('los temas con pocas notas llevan a la búsqueda filtrada, los demás a su página', async ({ page }) => {
     await dismissConsent(page);
     await page.goto('/nota/investigadores-describen-posible-nueva-especie-rana');

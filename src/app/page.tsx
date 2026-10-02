@@ -15,6 +15,7 @@ import { SectionBlock } from '@/components/home/SectionBlock';
 import { Recommended } from '@/components/home/Recommended';
 import { NewsletterSignup } from '@/components/newsletter/NewsletterSignup';
 import { AdSlot } from '@/components/ads/AdSlot';
+import { EmptyFront } from '@/components/home/EmptyFront';
 import styles from './page.module.css';
 
 // La portada se arma con el sitio: en cada publicación y una vez por día (ver docs/DESPLIEGUE.md).
@@ -25,6 +26,15 @@ const HALF_SECTIONS = ['ciencia', 'negocios'];
 export default async function HomePage() {
   const now = new Date();
   const articles = await getRepository().listAllPublished();
+  if (articles.length === 0) {
+    return (
+      <div className={styles.page}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteJsonLd()) }} />
+        <h1 className="visually-hidden">Contraste, portada del {formatLongDate(now)}</h1>
+        <EmptyFront />
+      </div>
+    );
+  }
   const summaries = articles.map(toSummary);
   const front = composeFrontPage(summaries, now);
   const popularity = await getPopularity().mostRead(5);

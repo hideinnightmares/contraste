@@ -51,13 +51,15 @@ Las páginas no cambian.
 | Ruta | Cómo se genera |
 | --- | --- |
 | `/`, `/ultimas`, sitemaps, RSS | Al armar el sitio |
-| `/nota/[slug]` | Una página por nota publicada (`generateStaticParams`, `dynamicParams = false`) |
+| `/nota/[[...slug]]` | Una página por nota publicada (`dynamicParams = false`). `/nota` sola lleva a Últimas noticias |
 | `/seccion/[slug]/[[...pagina]]` | Una página por sección y por página del listado: `/seccion/economia`, `/seccion/economia/pagina/2` |
-| `/tema/[slug]/[[...pagina]]` | Igual, solo para temas con al menos `MIN_NOTES_FOR_TAG_PAGE` notas (3). Los demás temas enlazan a `/buscar?tema=…` |
+| `/tema/[[...ruta]]` | `/tema` es el índice de temas; `/tema/clima` y `/tema/clima/pagina/2`, cada tema con al menos `MIN_NOTES_FOR_TAG_PAGE` notas (3). Los demás temas enlazan a `/buscar?tema=…` |
 | `/buscar` | Página fija; los criterios van en la dirección y la búsqueda corre en el navegador |
 | `/indice-busqueda.json` | Índice del buscador: resumen y texto plano de cada nota (`SearchDocument`) |
 
-La paginación usa una ruta opcional `[[...pagina]]` y no rutas `/pagina/[n]` aparte: Next.js corta el armado si una ruta dinámica no tiene ninguna página para generar, y en una sección con pocas notas pasaría.
+Notas, secciones y temas usan rutas opcionales (`[[...]]`) que siempre generan al menos una página (`/nota`, `/seccion/x`, `/tema`): con `output: 'export'`, Next.js corta el armado si una ruta dinámica no genera ninguna, y eso pasaría con la base vacía o con pocos temas.
+
+**Contenido.** `CONTENT_SOURCE=demo` usa el dataset ficticio; `CONTENT_SOURCE=database`, la foto de la base que se descarga antes de cada armado (ver `docs/BASE-DE-DATOS.md`). Los dos comparten la lógica de listados (`InMemoryArticleRepository`). Sin datos de lecturas, "Más leídas" no se muestra.
 
 **Fechas.** Se formatean con zona horaria `America/Argentina/Buenos_Aires` explícita. Como el HTML puede tener horas de antigüedad, las etiquetas relativas se corrigen en el navegador: la fecha del encabezado con un script en línea antes del primer pintado, y "Hoy"/"Ayer" de cada nota con `PublishedTime` (`useSyncExternalStore`: el HTML trae la etiqueta del armado y el navegador la recalcula al hidratar).
 

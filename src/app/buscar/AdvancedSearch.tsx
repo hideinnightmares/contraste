@@ -6,10 +6,10 @@ import { useEffect, useState } from 'react';
 import { categories, getCategory } from '@/config/categories';
 import { parseSearchQuery, search, type IndexedArticle, type SearchQuery } from '@/domain/search';
 import { contentTypeLabel } from '@/domain/labels';
-import { tagHref } from '@/lib/seo';
 import { loadSearchIndex } from '@/lib/search-index';
 import { ArticleList } from '@/components/listing/ArticleList';
 import { Pagination } from '@/components/listing/Pagination';
+import { TopicChips } from '@/components/listing/TopicChips';
 import { RowsSkeleton } from '@/components/skeleton/Skeleton';
 import styles from './page.module.css';
 
@@ -194,16 +194,7 @@ export function AdvancedSearch({ tags }: { tags: TagOption[] }) {
             <h2 id="resultados" className={styles.resultsTitle}>
               Temas con más notas
             </h2>
-            <ul role="list" className={styles.tags}>
-              {tags.slice(0, 16).map((t) => (
-                <li key={t.slug}>
-                  <Link href={tagHref(t.slug, t.count)} className={styles.tag}>
-                    {t.name}
-                    <span className={styles.tagCount}>{t.count}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <TopicChips topics={tags.slice(0, 16)} />
           </>
         )}
 

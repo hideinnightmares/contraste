@@ -1,16 +1,17 @@
 import 'server-only';
 import { cache } from 'react';
 import type { ArticleRepository } from './repository';
+import { site } from '@/config/site';
 import { DemoArticleRepository } from './demo-repository';
-import { DemoPopularityProvider, type PopularityProvider } from './popularity';
+import { SnapshotArticleRepository } from './snapshot-repository';
+import { DemoPopularityProvider, UnmeasuredPopularityProvider, type PopularityProvider } from './popularity';
 
 /**
  * Punto único de elección de la fuente de contenido.
  *
  * CONTENT_SOURCE=demo     → dataset ficticio en memoria (por defecto).
- * CONTENT_SOURCE=database → pendiente: implementar `ArticleRepository` sobre la base
- *                           (ver docs/ARQUITECTURA.md, "Conectar una base de datos").
- * CONTENT_SOURCE=cms      → pendiente: implementar sobre la API del CMS elegido.
+ * CONTENT_SOURCE=database → notas publicadas en Supabase, desde la foto que descarga
+ *                           `npm run content:sync` antes del armado (docs/BASE-DE-DATOS.md).
  *
  * Si se pide una fuente que no existe, falla al arrancar: nunca se cae en silencio
  * al contenido de demostración.
@@ -20,9 +21,11 @@ export const getRepository = cache((): ArticleRepository => {
   switch (source) {
     case 'demo':
       return new DemoArticleRepository();
+    case 'database':
+      return new SnapshotArticleRepository(undefined, { demoMode: site.demoMode });
     default:
       throw new Error(
-        `CONTENT_SOURCE="${source}" no tiene implementación. Las fuentes disponibles son: demo. Ver docs/ARQUITECTURA.md.`,
+        `CONTENT_SOURCE="${source}" no tiene implementación. Las fuentes disponibles son: demo, database. Ver docs/ARQUITECTURA.md.`,
       );
   }
 });
@@ -30,5 +33,6 @@ export const getRepository = cache((): ArticleRepository => {
 export const getPopularity = cache((): PopularityProvider => {
   const source = process.env.CONTENT_SOURCE ?? 'demo';
   if (source === 'demo') return new DemoPopularityProvider();
-  throw new Error('No hay proveedor de "más leídas" configurado para esta fuente de contenido.');
+  // Todavía no se miden lecturas: sin datos, "Más leídas" no se muestra (nunca un ranking inventado).
+  return new UnmeasuredPopularityProvider();
 });

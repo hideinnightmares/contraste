@@ -23,25 +23,40 @@ import { DemoNotice, DemoTag } from '@/components/demo/DemoStrip';
 import { AdSlot } from '@/components/ads/AdSlot';
 import { Recommended } from '@/components/home/Recommended';
 import { SectionHeading } from '@/components/home/SectionHeading';
+import { NotesIndex } from './NotesIndex';
 import styles from './page.module.css';
 
 // Solo existen las notas generadas al armar el sitio; el resto es 404.
 export const dynamicParams = false;
 
+/**
+ * `/nota/[slug]` es la nota. La ruta es opcional (`[[...slug]]`) para que `/nota` exista
+ * siempre: con `output: 'export'`, Next.js corta el armado si una ruta dinámica no genera
+ * ninguna página, y eso pasaría el día que no haya notas publicadas.
+ */
 export async function generateStaticParams() {
   const articles = await getRepository().listAllPublished();
-  return articles.map((a) => ({ slug: a.slug }));
+  return [{ slug: [] }, ...articles.map((a) => ({ slug: [a.slug] }))];
 }
 
-export async function generateMetadata({ params }: PageProps<'/nota/[slug]'>): Promise<Metadata> {
-  const { slug } = await params;
-  const article = await getRepository().getBySlug(slug);
+/** `null`: el índice `/nota`. `undefined`: una dirección que no existe. */
+function slugFrom(segments: string[] | undefined): string | null | undefined {
+  if (!segments || segments.length === 0) return null;
+  return segments.length === 1 ? segments[0] : undefined;
+}
+
+export async function generateMetadata({ params }: PageProps<'/nota/[[...slug]]'>): Promise<Metadata> {
+  const slug = slugFrom((await params).slug);
+  if (slug === null) return { title: 'Notas', alternates: { canonical: '/ultimas' }, robots: { index: false, follow: true } };
+  const article = slug ? await getRepository().getBySlug(slug) : null;
   if (!article) return { title: 'Nota no encontrada', robots: { index: false } };
   return articleMetadata(article);
 }
 
-export default async function ArticlePage({ params }: PageProps<'/nota/[slug]'>) {
-  const { slug } = await params;
+export default async function ArticlePage({ params }: PageProps<'/nota/[[...slug]]'>) {
+  const slug = slugFrom((await params).slug);
+  if (slug === null) return <NotesIndex />;
+  if (slug === undefined) notFound();
   const repo = getRepository();
   const article = await repo.getBySlug(slug);
   if (!article) notFound();

@@ -16,3 +16,14 @@ export class DemoPopularityProvider implements PopularityProvider {
     return { slugs: demoMostReadSlugs.slice(0, limit), simulated: true };
   }
 }
+
+/**
+ * Sin medición de lecturas: no hay ranking y la portada no muestra "Más leídas". Se
+ * reemplaza por un proveedor real cuando haya analytics (por ejemplo, Cloudflare Web
+ * Analytics leído al armar el sitio).
+ */
+export class UnmeasuredPopularityProvider implements PopularityProvider {
+  async mostRead() {
+    return { slugs: [], simulated: false };
+  }
+}

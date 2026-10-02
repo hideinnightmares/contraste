@@ -36,6 +36,31 @@ Esa clave salta las reglas de acceso: solo va en `.env.pipeline` y, cuando el pi
 
 Las notas de demostración solo entran a la base con `--permitir-demo` y quedan con `is_demo = true`: el sitio real no las muestra.
 
+## El sitio
+
+El sitio no consulta la base mientras se arma página por página. Antes de `next build`, `scripts/sync-content.ts` (incluido en `npm run build`) descarga las notas publicadas a una foto local (`.cache/contenido/notas.json`) y todas las páginas leen de ahí (`SnapshotArticleRepository`). Así:
+
+- la base se consulta una vez por armado, no una vez por página;
+- todas las páginas de un armado ven exactamente las mismas notas;
+- es incremental: primero baja el índice (id y fecha de cada nota, pocos bytes) y después solo el documento de las notas nuevas o cambiadas. En GitHub Actions la foto se guarda en la caché entre armados. Con miles de notas y 15 armados por día, la transferencia queda muy por debajo de los 5 GB mensuales del plan gratis;
+- una nota despublicada desaparece en el armado siguiente, porque ya no figura en el índice;
+- si la base no responde, el armado falla: publicar con una foto vieja podría volver a mostrar una nota despublicada.
+
+Usa la clave **publicable** (`SUPABASE_PUBLISHABLE_KEY` en `.env.production`): es pública por diseño y, por las reglas de acceso, solo lee notas publicadas con fecha cumplida. Probado desde internet: no ve borradores, no lee los informes del pipeline y no puede escribir.
+
+Con contenido real (`CONTRASTE_DEMO_MODE=false`), las notas de demostración nunca aparecen aunque estén publicadas en la base.
+
+### Pasar el sitio a contenido real
+
+Cuando haya notas reales publicadas, en GitHub: *Settings > Secrets and variables > Actions > Variables*:
+
+- `CONTENT_SOURCE` = `database`
+- `CONTRASTE_DEMO_MODE` = `false` (además saca el aviso de demostración y permite que Google indexe el sitio)
+
+No hace falta tocar código. Para volver a la demostración, se borran las dos variables.
+
+Probado con la base real: con una nota publicada, el sitio la muestra en la portada, en su página y en la búsqueda; con cero notas visibles, se arma igual, con mensajes claros en la portada, Últimas noticias, las secciones y `/tema`.
+
 ## Migraciones
 
 Cada cambio de la base es un archivo en `supabase/migrations/`, creado con:

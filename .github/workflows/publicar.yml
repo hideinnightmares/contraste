@@ -80,8 +80,23 @@ jobs:
           key: fotos-${{ hashFiles('public/images/**', 'src/config/images.ts') }}
           restore-keys: fotos-
 
+      # Foto de la base del armado anterior: solo se descargan las notas que cambiaron
+      # (scripts/sync-content.ts). La clave cambia en cada corrida para guardar siempre la última.
+      - uses: actions/cache@v6
+        if: steps.cupo.outputs.omitir != 'true'
+        with:
+          path: .cache/contenido
+          key: contenido-${{ github.run_id }}
+          restore-keys: contenido-
+
+      # De dónde salen las notas: variables del repositorio (Settings > Secrets and variables >
+      # Actions > Variables). Sin definir: dataset de demostración. Para pasar a contenido real,
+      # CONTENT_SOURCE=database y CONTRASTE_DEMO_MODE=false. Ver docs/BASE-DE-DATOS.md.
       - name: Armar el sitio
         if: steps.cupo.outputs.omitir != 'true'
+        env:
+          CONTENT_SOURCE: ${{ vars.CONTENT_SOURCE || 'demo' }}
+          CONTRASTE_DEMO_MODE: ${{ vars.CONTRASTE_DEMO_MODE || 'true' }}
         run: npm run build
 
       - name: Publicar en Cloudflare
