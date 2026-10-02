@@ -4,8 +4,9 @@ import { RssConnector } from './sources/rss';
 import { FixtureConnector } from './sources/fixture';
 import { clusterItems } from './stages/dedupe';
 import { verifyCluster } from './stages/verify';
+import { knownOutlets } from './stages/attribution';
 import { classifyCluster } from './stages/classify';
-import { buildBrief, type ArticleFetcher } from './stages/research';
+import { buildBrief, readFullTexts, type ArticleFetcher } from './stages/research';
 import { checkGrounding } from './stages/grounding';
 import { decideReview } from './stages/review';
 import { draftToArticle, type Publisher } from './stages/publish';
@@ -19,6 +20,7 @@ export interface PipelineOptions {
   connectors?: SourceConnector[];
   /** Sin redactor, el pipeline llega hasta la verificación y deja todo en espera. */
   writer?: ArticleWriter | null;
+  /** Lee el texto completo de cada nota (sources/article.ts). Sin él, se usa solo el feed. */
   fetcher?: ArticleFetcher;
   publisher?: Publisher | null;
   now?: () => Date;
@@ -75,6 +77,10 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
   const clusters = clusterItems(items);
   log(`${items.length} ítems en ${clusters.length} hechos`);
 
+  // Medios que una nota puede citar: los configurados y los de los conectores de esta corrida.
+  const definitions = new Map([...sourceDefinitions, ...connectors.map((c) => c.source)].map((d) => [d.id, d]));
+  const outlets = knownOutlets([...definitions.values()]);
+
   const takenSlugs = options.takenSlugs ?? new Set<string>();
   const covered = options.coveredSourceUrls ?? new Map<string, string>();
   const outcomes: ClusterOutcome[] = [];
@@ -82,7 +88,7 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
     // Un grupo formado solo por agregadores no es noticia: es una pista.
     if (cluster.items.every((i) => i.discoveryOnly)) continue;
 
-    const verification = verifyCluster(cluster);
+    let verification = verifyCluster(cluster, { outlets });
     const { category } = classifyCluster(cluster);
 
     const coveredBy = cluster.items.map((i) => covered.get(i.url)).find((slug) => slug !== undefined);
@@ -99,6 +105,18 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
       });
       continue;
     }
+    // El texto completo se lee solo para lo que puede llegar a redactarse: un hecho de una sola
+    // fuente queda en espera igual. Con ese texto se vuelve a verificar, porque la nota completa
+    // puede revelar que un medio repite a otro ("según informó…", la firma de una agencia).
+    let fullTexts = new Map<string, string>();
+    if (verification.status !== 'unverified' && options.fetcher) {
+      fullTexts = await readFullTexts(cluster, options.fetcher);
+      if (fullTexts.size > 0) {
+        log(`texto completo de ${fullTexts.size} de ${cluster.items.filter((i) => !i.discoveryOnly).length} fuentes: ${cluster.headline}`);
+        verification = verifyCluster(cluster, { fullTexts, outlets });
+      }
+    }
+
     const outcome: ClusterOutcome = {
       cluster,
       verification,
@@ -115,7 +133,7 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
       continue;
     }
 
-    const brief = await buildBrief(cluster, verification, category, options.fetcher);
+    const brief = buildBrief(cluster, verification, category, fullTexts);
     if (!options.writer) {
       outcome.stage = 'awaiting_writer';
       outcome.review = {

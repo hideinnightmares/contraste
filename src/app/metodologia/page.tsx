@@ -21,7 +21,7 @@ const steps = [
   { title: 'Fuentes', text: 'Seguimos agencias, medios, organismos oficiales y documentos públicos por RSS y APIs. Cada fuente tiene un tipo y un origen editorial registrado.' },
   { title: 'Recopilación', text: 'Reunimos lo publicado en las últimas horas y lo normalizamos: título, resumen, fecha, enlace y fuente.' },
   { title: 'Deduplicación', text: 'Agrupamos los ítems que cuentan el mismo hecho. Las réplicas de un mismo cable cuentan como una sola fuente.' },
-  { title: 'Investigación', text: 'Para cada hecho buscamos más fuentes, en especial las primarias: el documento, el organismo, el dato original.' },
+  { title: 'Investigación', text: 'Para cada hecho leemos la nota completa de cada fuente que lo permite y buscamos las primarias: el documento, el organismo, el dato original.' },
   { title: 'Verificación', text: 'Comparamos fechas, nombres y cifras entre fuentes. Si no coinciden, el hecho se marca para revisión humana.' },
   { title: 'Redacción', text: 'Un modelo de lenguaje escribe un borrador original solo con la información verificada. Cada cifra del borrador tiene que estar en alguna fuente.' },
   { title: 'Revisión', text: 'Una persona de la redacción revisa y aprueba. Ciertas secciones, como Política, siempre pasan por revisión humana.' },
@@ -75,8 +75,30 @@ export default function MethodologyPage() {
         <h2 id="independencia">Cómo contamos las fuentes</h2>
         <p>
           Dos medios que publican el mismo cable de agencia son, en realidad, una sola fuente. Por eso registramos el origen
-          editorial de cada fuente y contamos como independientes solo las que tienen orígenes distintos. Los agregadores de
-          noticias nos sirven para detectar temas, pero nunca cuentan como fuente.
+          editorial de cada fuente y contamos como independientes solo las que tienen orígenes distintos. Una nota que lleva la
+          firma de una agencia o que atribuye la información a otro medio (“según informó…”) cuenta como esa agencia o ese
+          medio. Los agregadores de noticias nos sirven para detectar temas, pero nunca cuentan como fuente.
+        </p>
+        <p>
+          En nuestras notas, cada dato va atribuido a la fuente que lo aporta, y cuando hay un documento o un organismo oficial,
+          la nota se apoya en él. No copiamos frases de otros medios: contamos los hechos con nuestras palabras y citamos de dónde
+          salen.
+        </p>
+
+        <h2 id="lector">Nuestro lector automático</h2>
+        <p>
+          Para contrastar, un programa lee las notas que publican las fuentes que seguimos. Se identifica como{' '}
+          <code>ContrasteBot</code> y:
+        </p>
+        <ul>
+          <li>respeta el archivo robots.txt de cada sitio;</li>
+          <li>no lee notas detrás de un muro de pago ni páginas marcadas como no disponibles para inteligencia artificial;</li>
+          <li>hace como mucho un pedido cada dos segundos a cada sitio;</li>
+          <li>usa el texto solo para verificar y redactar, y no lo guarda ni lo republica.</li>
+        </ul>
+        <p>
+          Si administrás un sitio y no querés que lo lea, agregá a tu robots.txt las líneas <code>User-agent: ContrasteBot</code> y{' '}
+          <code>Disallow: /</code>.
         </p>
 
         <h2 id="ia">Inteligencia artificial</h2>

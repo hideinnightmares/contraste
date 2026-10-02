@@ -1,4 +1,4 @@
-import type { SourceDefinition } from '@/pipeline/types';
+import type { KnownOutlet, SourceDefinition } from '@/pipeline/types';
 
 /**
  * Fuentes del pipeline.
@@ -8,7 +8,9 @@ import type { SourceDefinition } from '@/pipeline/types';
  * Para agregar una:
  *   1. Sumá un objeto con `connector: 'rss'`, la URL del feed y `enabled: true`.
  *   2. Asigná `origin`: dos fuentes que publican el mismo cable comparten origen.
- *   3. Si es un agregador (por ejemplo, un feed de búsqueda de noticias), marcá
+ *   3. Si otros medios la citan con otro nombre ("NA", "diario Clarín"), sumalo en `aliases`.
+ *      Así, una nota que dice "según informó Clarín" cuenta como Clarín y no como fuente nueva.
+ *   4. Si es un agregador (por ejemplo, un feed de búsqueda de noticias), marcá
  *      `discoveryOnly: true`: sirve para detectar temas, nunca como fuente.
  *
  * Las fuentes `fixture` leen ítems de prueba de `src/pipeline/fixtures/` y existen
@@ -80,4 +82,23 @@ export const sourceDefinitions: SourceDefinition[] = [
   //   url: 'https://…/feed.xml',
   //   enabled: false,
   // },
+];
+
+/**
+ * Agencias de noticias que los medios suelen reproducir. Una nota firmada por una agencia
+ * ("(EFE)", "Fuente: NA") o que le atribuye la información ("según informó AFP") cuenta como esa
+ * agencia, no como una fuente independiente. Si una de estas agencias se configura como fuente
+ * arriba, vale esa configuración (con sus `aliases`) y la de acá se ignora.
+ */
+export const wireAgencies: KnownOutlet[] = [
+  { name: 'Noticias Argentinas', origin: 'agencia:noticias-argentinas', aliases: ['Noticias Argentinas', 'NA'] },
+  { name: 'EFE', origin: 'agencia:efe', aliases: ['EFE'] },
+  { name: 'AFP', origin: 'agencia:afp', aliases: ['AFP', 'France-Presse', 'France Presse'] },
+  { name: 'Reuters', origin: 'agencia:reuters', aliases: ['Reuters'] },
+  { name: 'Associated Press', origin: 'agencia:ap', aliases: ['Associated Press', 'AP'] },
+  { name: 'ANSA', origin: 'agencia:ansa', aliases: ['ANSA'] },
+  { name: 'DPA', origin: 'agencia:dpa', aliases: ['DPA'] },
+  { name: 'Europa Press', origin: 'agencia:europa-press', aliases: ['Europa Press'] },
+  { name: 'Xinhua', origin: 'agencia:xinhua', aliases: ['Xinhua'] },
+  { name: 'Bloomberg', origin: 'agencia:bloomberg', aliases: ['Bloomberg'] },
 ];

@@ -10,6 +10,9 @@
  *                                    → también guarda en la base las notas armadas con fuentes de
  *                                      prueba (quedan marcadas como demostración)
  *
+ * Antes de redactar, lee el texto completo de cada nota real (respeta robots.txt, muros de pago y
+ * la marca noai; ver sources/article.ts). Las fuentes de prueba no se leen.
+ *
  * Imprime un informe por hecho y lo guarda en .data/pipeline/informes/.
  */
 import { existsSync } from 'node:fs';
@@ -19,6 +22,7 @@ import { loadEnvConfig } from '@next/env';
 import { runPipeline } from './run';
 import { createWriter } from './writers';
 import { FilePublisher, type Publisher } from './stages/publish';
+import { WebArticleFetcher } from './sources/article';
 import { SupabaseStore, supabaseFromEnv } from './storage/supabase';
 import { editorial } from '@/config/editorial';
 
@@ -61,8 +65,12 @@ async function main() {
     publisher = new FilePublisher();
   }
 
+  // Lee el texto completo de las notas reales (las fuentes de prueba no se leen).
+  const fetcher = new WebArticleFetcher({ log: (m) => console.log(`  · ${m}`) });
+
   const report = await runPipeline({
     writer,
+    fetcher,
     publisher,
     takenSlugs: store ? await store.existingSlugs() : undefined,
     coveredSourceUrls: store ? await store.coveredSourceUrls() : undefined,

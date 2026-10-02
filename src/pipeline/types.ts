@@ -18,7 +18,20 @@ export interface SourceDefinition {
   enabled: boolean;
   /** Solo sirve para descubrir temas (agregadores): nunca cuenta como fuente. */
   discoveryOnly?: boolean;
+  /**
+   * Otros nombres con que la citan otros medios ("diario Clarín", "NA"), tal como se escriben:
+   * se distinguen mayúsculas ("La Nación" es el diario; "la Nación", el Estado nacional).
+   */
+  aliases?: string[];
   language?: string;
+}
+
+/** Medio o agencia que otro medio puede citar como origen de una información. */
+export interface KnownOutlet {
+  name: string;
+  origin: string;
+  /** Nombres con que se lo cita, con sus mayúsculas. */
+  aliases: string[];
 }
 
 /** Ítem tal como llega de un conector, ya normalizado. */

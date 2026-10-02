@@ -1,6 +1,7 @@
 import { XMLParser } from 'fast-xml-parser';
 import type { SourceDefinition, SourceItem } from '../types';
 import { ConnectorError, itemFromParts, type SourceConnector } from './connector';
+import { userAgent } from './http';
 
 const MAX_BYTES = 5_000_000;
 const TIMEOUT_MS = 15_000;
@@ -69,7 +70,7 @@ export class RssConnector implements SourceConnector {
     try {
       res = await this.fetchImpl(this.source.url, {
         signal: combined,
-        headers: { 'User-Agent': 'ContrastePipeline/0.1 (+https://contraste.example/metodologia)', Accept: 'application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.5' },
+        headers: { 'User-Agent': userAgent(), Accept: 'application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.5' },
       });
     } catch (err) {
       throw new ConnectorError(this.source.id, `No se pudo descargar el feed: ${(err as Error).message}`, err);
