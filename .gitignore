@@ -33,8 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
-# .env.production solo lleva datos públicos (la dirección del sitio); cf:build corta si aparece un secreto.
+# .env.production y .env.development solo llevan datos públicos (dirección del sitio, clave publicable).
 !.env.production
+!.env.development
 
 # vercel
 .vercel

@@ -60,7 +60,7 @@ FUENTES → RECOPILACIÓN → DEDUPLICACIÓN → INVESTIGACIÓN → VERIFICACIÓ
 REDACCIÓN (IA) → CONTROL DE CIFRAS Y NOMBRES → REVISIÓN → PUBLICACIÓN
 ```
 
-`npm run pipeline` corre el pipeline con ítems de prueba y muestra cómo detecta una réplica de agencia (no suma independencia), una contradicción de cifras (va a revisión humana) y un hecho de fuente única (queda en espera). Con `-- --write` redacta borradores con Gemini (requiere `GEMINI_API_KEY` en `.env.pipeline`, gratis) y con `-- --save` los guarda en `.data/pipeline/`.
+`npm run pipeline` corre el pipeline con ítems de prueba y muestra cómo detecta una réplica de agencia (no suma independencia), una contradicción de cifras (va a revisión humana) y un hecho de fuente única (queda en espera). Con `-- --write` redacta borradores con Gemini (requiere `GEMINI_API_KEY` en `.env.pipeline`, gratis) y con `-- --save` los guarda en la base (o en `.data/pipeline/` si no está configurada).
 
 ## Qué falta configurar
 
@@ -69,9 +69,8 @@ Nada de esto se puede completar sin datos o decisiones del responsable del medio
 - **Datos institucionales**: razón social, CUIT, domicilio y emails en `src/config/site.ts`. Hoy se muestran como `[pendiente]`.
 - **Revisión legal** de privacidad, términos y cookies por un profesional matriculado (ver `docs/PRIVACIDAD-Y-LEGAL.md`).
 - **Fuentes reales**: URLs de feeds con permiso de uso en `src/config/sources.ts`.
-- **Mesa de redacción** para aprobar borradores desde el navegador. La base y la lectura desde el sitio ya están (ver `docs/BASE-DE-DATOS.md`).
+- **Mesa de redacción**: crear el usuario de cada editor y guardar el token de GitHub en Supabase Vault (ver `docs/MESA-DE-REDACCION.md`).
 - **Newsletter**: proveedor de email y la función que guarde suscripciones (ver `docs/NEWSLETTER.md`).
-- **Repositorio en GitHub** con el token de Cloudflare, para publicar solo (ver `docs/DESPLIEGUE.md`).
 - **AdSense**: ID de editor, IDs de bloques y una plataforma de consentimiento certificada por Google si hay tráfico europeo (ver `docs/ADSENSE.md`).
 - **Clave de Gemini en GitHub** (`GEMINI_API_KEY`, como secreto) cuando el pipeline corra allá.
 - **Dominio y nombre**: "Contraste" es un nombre de trabajo; verificar disponibilidad de marca y dominio antes de lanzar.
@@ -82,6 +81,7 @@ Nada de esto se puede completar sin datos o decisiones del responsable del medio
 - [Automatización](docs/AUTOMATIZACION.md): pipeline, fuentes, verificación, redactor con IA, política de revisión.
 - [Despliegue](docs/DESPLIEGUE.md): Cloudflare Workers, publicación automática, límites del plan gratis.
 - [Base de datos](docs/BASE-DE-DATOS.md): Supabase, tablas, quién puede hacer qué, migraciones.
+- [Mesa de redacción](docs/MESA-DE-REDACCION.md): revisar, corregir y publicar; qué controla la base; configuración inicial.
 - [Diseño](DESIGN.md): paleta, tipografía, forma y movimiento (formato DESIGN.md). Referencias en `design-md/`.
 - [AdSense](docs/ADSENSE.md): cómo activar la publicidad sin romper la experiencia ni las políticas.
 - [Newsletter](docs/NEWSLETTER.md): doble opt-in, datos guardados, proveedor.
