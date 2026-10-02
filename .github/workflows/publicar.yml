@@ -15,6 +15,12 @@ name: Publicar el sitio
 on:
   push:
     branches: [main]
+    # Un push que solo cambia la base o la documentación no cambia el sitio: no gasta minutos.
+    # (Si el push también toca código, el sitio se arma igual.)
+    paths-ignore:
+      - 'supabase/**'
+      - 'docs/**'
+      - '**/*.md'
   repository_dispatch:
     types: [publicar]
   schedule:

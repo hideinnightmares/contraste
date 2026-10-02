@@ -24,7 +24,7 @@ El sitio es estático: `npm run build` genera todas las páginas en `out/` y Clo
 
 `.github/workflows/publicar.yml` arma y publica en GitHub Actions (Linux):
 
-- con cada push a `main`,
+- con cada push a `main` que toque el sitio (los que cambian solo `supabase/`, `docs/` o archivos `.md` no lo rearman),
 - cuando se aprueba una nota: la mesa de redacción manda un `repository_dispatch` de tipo `publicar`,
 - todos los días a las 00:07 de Buenos Aires, para rearmar la portada y las etiquetas "Hoy"/"Ayer",
 - a mano, desde la pestaña Actions.
