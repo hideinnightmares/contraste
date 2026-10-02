@@ -1,0 +1,46 @@
+# Aplica las migraciones pendientes de supabase/migrations/ a la base de datos de Supabase.
+# Ver docs/BASE-DE-DATOS.md.
+#
+# Corre cuando llega a main un cambio en supabase/migrations/, o a mano desde la pestaña Actions.
+# Usa el secreto SUPABASE_DB_URL: la cadena de conexión del "Session pooler" de Supabase con la
+# contraseña de la base (GitHub no tiene IPv6, así que la conexión directa no sirve).
+name: Migrar la base de datos
+
+on:
+  push:
+    branches: [main]
+    paths: ['supabase/migrations/**']
+  workflow_dispatch:
+
+# Nunca dos migraciones a la vez.
+concurrency:
+  group: migrar-base
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Mostrar las migraciones pendientes
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: npx supabase db push --db-url "$SUPABASE_DB_URL" --dry-run
+
+      - name: Aplicar las migraciones
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: npx supabase db push --db-url "$SUPABASE_DB_URL" --yes

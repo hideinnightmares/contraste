@@ -80,7 +80,8 @@ Nada de esto se puede completar sin datos o decisiones del responsable del medio
 
 - [Arquitectura](docs/ARQUITECTURA.md): capas, flujo de datos, cómo conectar una base o un CMS.
 - [Automatización](docs/AUTOMATIZACION.md): pipeline, fuentes, verificación, redactor con IA, política de revisión.
-- [Despliegue](docs/DESPLIEGUE.md): Cloudflare Workers, variables y secretos, caché, límites del plan gratis.
+- [Despliegue](docs/DESPLIEGUE.md): Cloudflare Workers, publicación automática, límites del plan gratis.
+- [Base de datos](docs/BASE-DE-DATOS.md): Supabase, tablas, quién puede hacer qué, migraciones.
 - [Diseño](DESIGN.md): paleta, tipografía, forma y movimiento (formato DESIGN.md). Referencias en `design-md/`.
 - [AdSense](docs/ADSENSE.md): cómo activar la publicidad sin romper la experiencia ni las políticas.
 - [Newsletter](docs/NEWSLETTER.md): doble opt-in, datos guardados, proveedor.
