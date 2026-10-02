@@ -8,6 +8,7 @@ import type { KnownOutlet, SourceDefinition } from '@/pipeline/types';
  *
  * Para agregar una fuente:
  *   1. Sumá un objeto con `connector: 'rss'`, la URL del feed, la portada (`site`) y `enabled: true`.
+ *      Si el feed principal trae pocas notas, sumá los de sus secciones en `extraFeeds`.
  *   2. Asigná `origin`: dos fuentes que publican el mismo cable comparten origen.
  *   3. Si otros medios la citan con otro nombre ("NA", "LA NACION"), sumalo en `aliases`, con sus
  *      mayúsculas. Así, una nota que dice "según informó Clarín" cuenta como Clarín y no como
@@ -25,6 +26,13 @@ export const realSources: SourceDefinition[] = [
     origin: 'clarin',
     connector: 'rss',
     url: 'https://www.clarin.com/rss/lo-ultimo/',
+    extraFeeds: [
+      'https://www.clarin.com/rss/politica/',
+      'https://www.clarin.com/rss/economia/',
+      'https://www.clarin.com/rss/sociedad/',
+      'https://www.clarin.com/rss/mundo/',
+      'https://www.clarin.com/rss/policiales/',
+    ],
     site: 'https://www.clarin.com/',
     enabled: true,
   },
@@ -56,6 +64,12 @@ export const realSources: SourceDefinition[] = [
     origin: 'pagina12',
     connector: 'rss',
     url: 'https://www.pagina12.com.ar/arc/outboundfeeds/rss/?outputType=xml',
+    extraFeeds: [
+      'https://www.pagina12.com.ar/arc/outboundfeeds/rss/secciones/el-pais/notas',
+      'https://www.pagina12.com.ar/arc/outboundfeeds/rss/secciones/economia/notas',
+      'https://www.pagina12.com.ar/arc/outboundfeeds/rss/secciones/sociedad/notas',
+      'https://www.pagina12.com.ar/arc/outboundfeeds/rss/secciones/el-mundo/notas',
+    ],
     site: 'https://www.pagina12.com.ar/',
     aliases: ['Página 12', 'Página12'],
     enabled: true,
@@ -67,6 +81,11 @@ export const realSources: SourceDefinition[] = [
     origin: 'perfil',
     connector: 'rss',
     url: 'https://www.perfil.com/feed',
+    extraFeeds: [
+      'https://www.perfil.com/feed/politica',
+      'https://www.perfil.com/feed/economia',
+      'https://www.perfil.com/feed/sociedad',
+    ],
     site: 'https://www.perfil.com/',
     enabled: true,
   },
@@ -88,6 +107,13 @@ export const realSources: SourceDefinition[] = [
     origin: 'ambito',
     connector: 'rss',
     url: 'https://www.ambito.com/rss/pages/home.xml',
+    extraFeeds: [
+      'https://www.ambito.com/rss/pages/ultimas-noticias.xml',
+      'https://www.ambito.com/rss/pages/politica.xml',
+      'https://www.ambito.com/rss/pages/economia.xml',
+      'https://www.ambito.com/rss/pages/nacional.xml',
+      'https://www.ambito.com/rss/pages/mundo.xml',
+    ],
     site: 'https://www.ambito.com/',
     aliases: ['Ámbito Financiero'],
     enabled: true,

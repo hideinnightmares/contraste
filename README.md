@@ -41,6 +41,7 @@ npm run preview
 | `npm run test:e2e` | Tests de punta a punta y de accesibilidad (Playwright + axe) sobre `out/`. Requiere `npm run build` antes |
 | `npm run check:contrast` | Mide el contraste WCAG de cada par de colores en modo claro, oscuro y banda invertida |
 | `npm run pipeline` | Corre el pipeline de automatización con las fuentes configuradas (ver abajo) |
+| `npm run fuentes:probar` | Prueba cada fuente: feed, lectura de una nota y robots.txt |
 
 ## Qué hay
 
@@ -60,7 +61,7 @@ FUENTES → RECOPILACIÓN → DEDUPLICACIÓN → INVESTIGACIÓN → VERIFICACIÓ
 REDACCIÓN (IA) → CONTROL DE CIFRAS Y NOMBRES → REVISIÓN → PUBLICACIÓN
 ```
 
-`npm run pipeline` corre el pipeline con ítems de prueba y muestra cómo detecta una réplica de agencia (no suma independencia), una contradicción de cifras (va a revisión humana) y un hecho de fuente única (queda en espera). Con `-- --write` redacta borradores con Gemini (requiere `GEMINI_API_KEY` en `.env.pipeline`, gratis) y con `-- --save` los guarda en la base (o en `.data/pipeline/` si no está configurada).
+`npm run pipeline` lee las fuentes reales (medios nacionales, Noticias Argentinas, organismos oficiales e internacionales en castellano) y muestra qué hechos encuentra y cuántas fuentes independientes tiene cada uno. `npm run pipeline -- --prueba` hace lo mismo con ítems ficticios y sin red: muestra cómo detecta una réplica de agencia (no suma independencia), una contradicción de cifras (va a revisión humana) y un hecho de fuente única (queda en espera). Con `-- --write` redacta borradores con Gemini (requiere `GEMINI_API_KEY` en `.env.pipeline`, gratis) y con `-- --save` los guarda en la base (o en `.data/pipeline/` si no está configurada). `npm run fuentes:probar` prueba cada fuente. En GitHub, el flujo Pipeline de noticias lo corre cada 2 horas cuando se lo activa (ver `docs/AUTOMATIZACION.md`).
 
 ## Qué falta configurar
 
@@ -68,11 +69,11 @@ Nada de esto se puede completar sin datos o decisiones del responsable del medio
 
 - **Datos institucionales**: razón social, CUIT, domicilio y emails en `src/config/site.ts`. Hoy se muestran como `[pendiente]`.
 - **Revisión legal** de privacidad, términos y cookies por un profesional matriculado (ver `docs/PRIVACIDAD-Y-LEGAL.md`).
-- **Fuentes reales**: URLs de feeds con permiso de uso en `src/config/sources.ts`.
+- **Fuentes oficiales sin feed**: el Boletín Oficial, el INDEC y el BCRA no publican feeds; hace falta un conector que lea su página de novedades (ver `docs/AUTOMATIZACION.md`, "Fuentes").
 - **Mesa de redacción**: crear el usuario de cada editor y guardar el token de GitHub en Supabase Vault (ver `docs/MESA-DE-REDACCION.md`).
 - **Newsletter**: proveedor de email y la función que guarde suscripciones (ver `docs/NEWSLETTER.md`).
 - **AdSense**: ID de editor, IDs de bloques y una plataforma de consentimiento certificada por Google si hay tráfico europeo (ver `docs/ADSENSE.md`).
-- **Clave de Gemini en GitHub** (`GEMINI_API_KEY`, como secreto) cuando el pipeline corra allá.
+- **Pipeline en GitHub**: los secretos `GEMINI_API_KEY` y `SUPABASE_SECRET_KEY` y la variable `CONTRASTE_PIPELINE_ACTIVO` (ver `docs/AUTOMATIZACION.md`, "Corrida programada").
 - **Dominio y nombre**: "Contraste" es un nombre de trabajo; verificar disponibilidad de marca y dominio antes de lanzar.
 
 ## Documentación

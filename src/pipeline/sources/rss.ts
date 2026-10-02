@@ -4,7 +4,8 @@ import { ConnectorError, itemFromParts, type SourceConnector } from './connector
 import { userAgent } from './http';
 
 const MAX_BYTES = 5_000_000;
-const TIMEOUT_MS = 15_000;
+/** Algunos feeds grandes tardan más de 15 segundos en responder. */
+const TIMEOUT_MS = 30_000;
 
 type Node = Record<string, unknown>;
 
@@ -60,7 +61,7 @@ function toIso(value: string): string {
   return Number.isNaN(d.getTime()) ? new Date(0).toISOString() : d.toISOString();
 }
 
-/** Conector RSS/Atom real: descarga el feed con límite de tiempo y de tamaño. */
+/** Conector RSS/Atom real: descarga el feed (y los de sus secciones) con límite de tiempo y de tamaño. */
 export class RssConnector implements SourceConnector {
   constructor(
     readonly source: SourceDefinition,
@@ -68,11 +69,22 @@ export class RssConnector implements SourceConnector {
   ) {}
 
   async fetchItems({ since, signal }: { since: Date; signal?: AbortSignal }): Promise<SourceItem[]> {
+    // El feed principal tiene que andar; uno de sección que falla no frena al resto.
+    const [main, ...extra] = await Promise.allSettled([this.source.url, ...(this.source.extraFeeds ?? [])].map((url) => this.fetchFeed(url, signal)));
+    if (main.status === 'rejected') throw main.reason;
+    const entries = [main.value, ...extra.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []))].flat();
+    const now = new Date();
+    return entries
+      .filter((e) => e.url && e.title && new Date(e.publishedAt) >= since)
+      .map((e) => itemFromParts(this.source, e, now));
+  }
+
+  private async fetchFeed(url: string, signal?: AbortSignal) {
     const timeout = AbortSignal.timeout(TIMEOUT_MS);
     const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
     let res: Response;
     try {
-      res = await this.fetchImpl(this.source.url, {
+      res = await this.fetchImpl(url, {
         signal: combined,
         headers: { 'User-Agent': userAgent(), Accept: 'application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.5' },
       });
@@ -84,16 +96,10 @@ export class RssConnector implements SourceConnector {
     if (length > MAX_BYTES) throw new ConnectorError(this.source.id, 'El feed supera el tamaño máximo');
     const body = await res.text();
     if (body.length > MAX_BYTES) throw new ConnectorError(this.source.id, 'El feed supera el tamaño máximo');
-
-    let entries;
     try {
-      entries = parseFeed(body);
+      return parseFeed(body);
     } catch (err) {
       throw new ConnectorError(this.source.id, `Feed inválido: ${(err as Error).message}`, err);
     }
-    const now = new Date();
-    return entries
-      .filter((e) => e.url && e.title && new Date(e.publishedAt) >= since)
-      .map((e) => itemFromParts(this.source, e, now));
   }
 }

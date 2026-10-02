@@ -39,6 +39,8 @@ export interface PipelineOptions {
    * independientes; el resto queda para la próxima. Sin límite si no se indica.
    */
   maxDrafts?: number;
+  /** Máximo de borradores de una misma sección por corrida. Por defecto, el de `config/editorial.ts`. */
+  maxPerCategory?: number;
   /** Slugs ya usados en el sitio, para no repetir. */
   takenSlugs?: Set<string>;
   /**
@@ -70,14 +72,19 @@ interface Candidate {
 const PRIMARY_KINDS = new Set(['official', 'public_document', 'news_agency']);
 const hasPrimarySource = (cluster: StoryCluster) => cluster.items.some((i) => !i.discoveryOnly && PRIMARY_KINDS.has(i.sourceKind));
 
+/** A igual cobertura, primero lo confirmado; lo que todas las fuentes dan en condicional, al final. */
+const STATUS_RANK: Partial<Record<VerificationReport['status'], number>> = { verified: 0, disputed: 1, partial: 2 };
+const statusRank = (c: Candidate) => STATUS_RANK[c.verification.status] ?? 3;
+
 /**
  * Orden de redacción: primero lo que cubren más fuentes independientes (lo que más medios
- * consideran noticia); a igual cobertura, lo que tiene una fuente primaria, y después lo más
- * reciente.
+ * consideran noticia); a igual cobertura, lo confirmado, lo que tiene una fuente primaria y
+ * después lo más reciente.
  */
 function byPriority(a: Candidate, b: Candidate): number {
   return (
     b.verification.independentSources - a.verification.independentSources ||
+    statusRank(a) - statusRank(b) ||
     Number(hasPrimarySource(b.cluster)) - Number(hasPrimarySource(a.cluster)) ||
     b.cluster.lastSeenAt.localeCompare(a.cluster.lastSeenAt)
   );
@@ -171,6 +178,8 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
 
   candidates.sort(byPriority);
   const maxDrafts = options.maxDrafts ?? Number.POSITIVE_INFINITY;
+  const maxPerCategory = options.maxPerCategory ?? editorial.drafting.maxPerCategoryPerRun;
+  const perCategory = new Map<string, number>();
   let researched = 0;
   /** Por qué no se redacta nada más en esta corrida: se llegó al máximo o el redactor no tiene cupo. */
   let stopReason: string | null = null;
@@ -181,11 +190,19 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
     if (!stopReason && researched >= maxDrafts) {
       stopReason = `La corrida llegó al máximo de ${maxDrafts} borradores: se redacta en una próxima.`;
     }
-    if (stopReason) {
-      outcomes.push({ cluster, verification, category, draft: null, grounding: null, review: { decision: 'hold', reasons: [stopReason] }, stage: 'deferred' });
+    const section = category ?? '';
+    const sameSection = perCategory.get(section) ?? 0;
+    const deferReason =
+      stopReason ??
+      (sameSection >= maxPerCategory
+        ? `Ya hay ${sameSection} ${sameSection === 1 ? 'borrador' : 'borradores'} ${category ? `de ${category}` : 'sin sección'} en esta corrida: se redacta en una próxima.`
+        : null);
+    if (deferReason) {
+      outcomes.push({ cluster, verification, category, draft: null, grounding: null, review: { decision: 'hold', reasons: [deferReason] }, stage: 'deferred' });
       continue;
     }
     researched++;
+    perCategory.set(section, sameSection + 1);
 
     // Con el texto completo se vuelve a verificar, porque la nota completa puede revelar que un
     // medio repite a otro ("según informó…", la firma de una agencia).

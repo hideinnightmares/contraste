@@ -48,6 +48,8 @@ type FeedCheck = FeedOk | { ok: false; error: string; html?: string; finalUrl?: 
 interface Result {
   source: SourceDefinition;
   feed: FeedCheck;
+  /** Feeds de secciones (`extraFeeds`). */
+  extras: { url: string; feed: FeedCheck }[];
   /** Feeds que funcionan en el sitio: alternativas si el configurado falla, u otros con --descubrir. */
   suggestions: { url: string; feed: FeedOk }[];
   reading: { chars: number } | { skipped: SkipReason } | null;
@@ -121,8 +123,9 @@ async function suggest(source: SourceDefinition, { commonPaths }: { commonPaths:
 }
 
 async function probe(source: SourceDefinition, { discover, named }: { discover: boolean; named: boolean }): Promise<Result> {
-  const feed = await checkFeed(source.url);
-  const result: Result = { source, feed, suggestions: [], reading: null, gemini: null };
+  const [feed, ...extraChecks] = await Promise.all([source.url, ...(source.extraFeeds ?? [])].map(checkFeed));
+  const extras = (source.extraFeeds ?? []).map((url, i) => ({ url, feed: extraChecks[i] }));
+  const result: Result = { source, feed, extras, suggestions: [], reading: null, gemini: null };
   if (!feed.ok) {
     if (source.enabled || named) result.suggestions = await suggest(source, { commonPaths: true });
     return result;
@@ -177,6 +180,13 @@ function report(r: Result): string[] {
     return lines;
   }
   lines.push(`  ✓ ${r.feed.items} notas; la más nueva, ${age(r.feed.newest)}.`);
+  for (const extra of r.extras) {
+    lines.push(
+      extra.feed.ok
+        ? `  ✓ Sección ${extra.url}: ${extra.feed.items} notas, la más nueva ${age(extra.feed.newest)}.`
+        : `  ✗ Sección ${extra.url}: no anda (${extra.feed.error}).`,
+    );
+  }
   if (!r.feed.newest) lines.push('  ✗ Las notas no traen fecha: el pipeline no puede saber si son de hoy y no las usa.');
   if (r.reading && 'chars' in r.reading) lines.push(`  ✓ Nota de ejemplo leída: ${formatNumber(r.reading.chars)} caracteres («${r.feed.sample.title}»).`);
   else if (r.reading) lines.push(`  ✗ Nota de ejemplo no leída: ${READING_LABEL[r.reading.skipped]} (${r.feed.sample.url}).`);
@@ -196,7 +206,10 @@ function summaryTable(results: Result[]): string {
       return `| ${name} | ✗ ${r.feed.error} | | | ${hint} | |`;
     }
     const reading = r.reading && 'chars' in r.reading ? `✓ ${formatNumber(r.reading.chars)} car.` : r.reading ? `✗ ${READING_LABEL[r.reading.skipped]}` : '';
-    return `| ${name} | ✓ | ${r.feed.items} | ${age(r.feed.newest)} | ${reading} | ${r.gemini ? GEMINI_LABEL[r.gemini] : ''} |`;
+    const sections = r.extras.length > 0 ? ` (+${r.extras.reduce((n, e) => n + (e.feed.ok ? e.feed.items : 0), 0)} de secciones)` : '';
+    const brokenSections = r.extras.filter((e) => !e.feed.ok).length;
+    const feed = brokenSections > 0 ? `✓ (✗ ${brokenSections} sección/es)` : '✓';
+    return `| ${name} | ${feed} | ${r.feed.items}${sections} | ${age(r.feed.newest)} | ${reading} | ${r.gemini ? GEMINI_LABEL[r.gemini] : ''} |`;
   });
   return ['| Fuente | Feed | Notas | La más nueva | Lectura de una nota | Gemini gratis |', '| --- | --- | --- | --- | --- | --- |', ...rows].join('\n');
 }
@@ -214,14 +227,14 @@ async function main() {
   const results = await Promise.all(sources.map((source) => probe(source, { discover, named: wanted.includes(source.id) })));
   for (const r of results) console.log(report(r).join('\n'));
 
-  const failed = results.filter((r) => r.source.enabled && !r.feed.ok);
+  const failed = results.filter((r) => r.source.enabled && (!r.feed.ok || r.extras.some((e) => !e.feed.ok)));
   const table = summaryTable(results);
   console.log(`\n${table}`);
   if (process.env.GITHUB_STEP_SUMMARY) {
     await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Prueba de las fuentes\n\n${table}\n`);
   }
   if (failed.length > 0) {
-    console.error(`\nNo anda el feed de ${failed.length} fuente(s) habilitada(s): ${failed.map((r) => r.source.id).join(', ')}.`);
+    console.error(`\nNo anda algún feed de ${failed.length} fuente(s) habilitada(s): ${failed.map((r) => r.source.id).join(', ')}.`);
     process.exitCode = 1;
   } else {
     console.log('\nTodas las fuentes habilitadas responden.');

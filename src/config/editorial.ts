@@ -58,6 +58,13 @@ export const editorial = {
       /\b(?:quiniela|quini 6|loto plus|brinco)\b/i,
     ],
   },
+  drafting: {
+    /**
+     * Borradores de una misma sección por corrida, como máximo (la sección que asigna el
+     * clasificador). Así una corrida no se llena de un solo tema: el resto queda para la próxima.
+     */
+    maxPerCategoryPerRun: 2,
+  },
   dedupe: {
     /** Similitud mínima de títulos (0–1) para considerar que dos ítems cuentan lo mismo. */
     titleSimilarity: 0.5,

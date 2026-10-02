@@ -9,7 +9,7 @@ import { isRollingCoverage, runPipeline } from '@/pipeline/run';
 import { WebArticleFetcher } from '@/pipeline/sources/article';
 import { itemFromParts, type SourceConnector } from '@/pipeline/sources/connector';
 import { COMMON_FEED_PATHS, feedLinks } from '@/pipeline/sources/discover';
-import { parseFeed } from '@/pipeline/sources/rss';
+import { parseFeed, RssConnector } from '@/pipeline/sources/rss';
 import { citedOutlet, knownOutlets } from '@/pipeline/stages/attribution';
 import { GEMINI_OPT_OUT_AGENT, GeminiArticleWriter } from '@/pipeline/writers/gemini';
 import { WriterError, type ArticleWriter } from '@/pipeline/writers/writer';
@@ -56,6 +56,32 @@ describe('fuentes configuradas', () => {
 });
 
 describe('feeds', () => {
+  it('lee también los feeds de secciones y sigue si uno falla', async () => {
+    const rss = (slug: string) =>
+      `<rss><channel><item><title>Nota ${slug}</title><link>https://diario.test/${slug}</link><pubDate>${NOW.toUTCString()}</pubDate></item></channel></rss>`;
+    const def: SourceDefinition = {
+      id: 'diario',
+      name: 'Diario',
+      kind: 'local_media',
+      origin: 'diario',
+      connector: 'rss',
+      url: 'https://diario.test/feed',
+      extraFeeds: ['https://diario.test/feed/politica', 'https://diario.test/feed/rota'],
+      enabled: true,
+    };
+    const routes: Record<string, () => Response> = {
+      'https://diario.test/feed': () => new Response(rss('portada')),
+      'https://diario.test/feed/politica': () => new Response(rss('politica')),
+    };
+    const fetchImpl = (async (input: string | URL | Request) => routes[String(input)]?.() ?? new Response('', { status: 404 })) as typeof fetch;
+    const items = await new RssConnector(def, fetchImpl).fetchItems({ since: new Date(NOW.getTime() - 3_600_000) });
+    expect(items.map((i) => i.url)).toEqual(['https://diario.test/portada', 'https://diario.test/politica']);
+
+    // Si falla el principal, la fuente falla.
+    const broken = { ...def, url: 'https://diario.test/feed/rota' };
+    await expect(new RssConnector(broken, fetchImpl).fetchItems({ since: new Date(0) })).rejects.toThrow('HTTP 404');
+  });
+
   it('lee RSS 1.0 (RDF), con los ítems al lado del canal', () => {
     const xml = `<?xml version="1.0"?>
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://purl.org/rss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -276,6 +302,63 @@ describe('tope de borradores por corrida', () => {
     expect(stageOf('hospital')).toBe('deferred');
     expect(stageOf('puerto')).toBe('deferred');
     expect(report.outcomes.find((o) => o.stage === 'deferred')!.review.reasons[0]).toMatch(/sin cupo o saturado/);
+  });
+
+  it('no llena una corrida con una sola sección', async () => {
+    // Otro hecho de sociedad, como el puente (el clasificador lo asigna por "barrio" y "vecinos").
+    const cortes = [
+      { def: andino, slug: 'cortes', title: 'Vecinos del barrio sur reclaman por los cortes de luz', summary: 'Llevan tres días sin servicio.' },
+      { def: bosque, slug: 'cortes', title: 'Cortes de luz: reclamo de vecinos del barrio sur', summary: 'Los vecinos cortaron una avenida.' },
+    ];
+    const withCortes: SourceConnector[] = connectors.map((c) => ({
+      source: c.source,
+      async fetchItems(options) {
+        const extra = cortes
+          .filter((e) => e.def === c.source)
+          .map((e) => itemFromParts(e.def, { url: `https://${e.def.id}.test/${e.slug}`, title: e.title, summary: e.summary, publishedAt: NOW.toISOString() }, NOW));
+        return [...(await c.fetchItems(options)), ...extra];
+      },
+    }));
+    const writer: ArticleWriter = { name: 'prueba', write: async (brief) => draftFor(brief) };
+    const report = await runPipeline({ connectors: withCortes, writer, maxDrafts: 10, maxPerCategory: 1, now: () => NOW });
+    const outcome = (word: string) => report.outcomes.find((o) => o.cluster.headline.toLowerCase().includes(word))!;
+    // El puente (3 fuentes) va primero; los cortes, de la misma sección, quedan para la próxima.
+    expect(outcome('puente').stage).toBe('drafted');
+    expect(outcome('cortes').stage).toBe('deferred');
+    expect(outcome('cortes').review.reasons).toEqual(['Ya hay 1 borrador de sociedad en esta corrida: se redacta en una próxima.']);
+    // Las otras secciones no se ven afectadas.
+    expect(outcome('hospital').stage).toBe('drafted');
+    expect(outcome('dragado').stage).toBe('drafted');
+  });
+
+  it('a igual cobertura, redacta primero lo confirmado que lo que todas las fuentes dan en condicional', async () => {
+    const rumor = [
+      { def: andino, slug: 'rumor', title: 'El club habría contratado a un nuevo director técnico', summary: 'Trascendió que firmaría por dos años.' },
+      { def: costa, slug: 'rumor', title: 'El club habría contratado a su nuevo director técnico', summary: 'Según trascendió, el acuerdo se firmaría hoy.' },
+    ];
+    const withRumor: SourceConnector[] = connectors.map((c) => ({
+      source: c.source,
+      async fetchItems(options) {
+        const extra = rumor
+          .filter((e) => e.def === c.source)
+          .map((e) => itemFromParts(e.def, { url: `https://${e.def.id}.test/${e.slug}`, title: e.title, summary: e.summary, publishedAt: NOW.toISOString() }, NOW));
+        return [...(await c.fetchItems(options)), ...extra];
+      },
+    }));
+    const written: string[] = [];
+    const writer: ArticleWriter = {
+      name: 'prueba',
+      async write(brief) {
+        written.push(brief.headline);
+        return draftFor(brief);
+      },
+    };
+    const report = await runPipeline({ connectors: withRumor, writer, maxDrafts: 3, maxPerCategory: 10, now: () => NOW });
+    const rumorOutcome = report.outcomes.find((o) => o.cluster.headline.includes('director técnico'))!;
+    expect(rumorOutcome.verification.status).toBe('partial');
+    // Puente (3 fuentes), hospital (2, con una oficial), puerto (2): el rumor (2, en condicional) queda para después.
+    expect(written).toHaveLength(3);
+    expect(rumorOutcome.stage).toBe('deferred');
   });
 
   it('el informe que se guarda en la base es compacto y ningún informe lleva texto ajeno', async () => {

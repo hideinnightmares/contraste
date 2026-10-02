@@ -34,7 +34,9 @@ Las reglas están probadas contra la base real: un visitante y un usuario loguea
 
 `npm run pipeline -- --write --save` guarda cada borrador en `articles` (con el modelo que lo escribió en `writer`) y el informe en `pipeline_runs`, y vincula las notas con su corrida. Usa la clave secreta `pipeline` (Project Settings > API Keys > Secret keys), en `.env.pipeline` como `SUPABASE_SECRET_KEY`.
 
-Esa clave salta las reglas de acceso: solo va en `.env.pipeline` y, cuando el pipeline corra en GitHub, como secreto del repositorio. Si se filtra, se anula desde el mismo panel y se crea otra; no afecta al resto.
+Esa clave salta las reglas de acceso: solo va en `.env.pipeline` y, para la corrida programada en GitHub, como secreto del repositorio (`SUPABASE_SECRET_KEY`, ver [AUTOMATIZACION.md](AUTOMATIZACION.md#corrida-programada)). Si se filtra, se anula desde el mismo panel y se crea otra; no afecta al resto.
+
+El informe que se guarda en `pipeline_runs` es compacto (`src/pipeline/report.ts`): el detalle de lo que se investigó y redactó, los títulos de lo que quedó para la próxima corrida y la cuenta del resto. No lleva el texto de las notas ajenas. Ocupa unos 15 KB por corrida: con 8 corridas por día, unos 4 MB por mes. Los borradores, con 4 por corrida, suman unos 15 MB por mes: los 500 MB del plan gratis alcanzan para un par de años.
 
 Las notas de demostración solo entran a la base con `--permitir-demo` y quedan con `is_demo = true`: el sitio real no las muestra.
 

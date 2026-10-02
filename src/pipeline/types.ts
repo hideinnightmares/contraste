@@ -15,6 +15,11 @@ export interface SourceDefinition {
   origin: string;
   connector: 'rss' | 'fixture';
   url: string;
+  /**
+   * Feeds de secciones del mismo medio, para los que dan pocas notas en el principal. Se leen
+   * junto con `url`; si uno falla, se sigue con el resto.
+   */
+  extraFeeds?: string[];
   /** Portada del sitio: el probador de fuentes busca ahí el feed si la `url` deja de andar. */
   site?: string;
   enabled: boolean;
