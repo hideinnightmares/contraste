@@ -75,6 +75,8 @@ export interface Figure {
   value: number;
   unit: string | null;
   context: string[];
+  /** La palabra justo antes de la cifra ("los" en "a los 96 años", "durante" en "durante 22 años"). */
+  lead: string;
   itemId: string;
 }
 

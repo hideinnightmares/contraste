@@ -81,20 +81,36 @@ export function extractFigures(text: string, itemId: string): Figure[] {
       .slice(-5)
       .map((t) => t.slice(0, 5));
 
+    const lead =
+      norm
+        .slice(Math.max(0, m.index - 30), m.index)
+        .split(/[^a-z0-9]+/)
+        .filter(Boolean)
+        .pop() ?? '';
+
     figures.push({
       raw: text.slice(m.index, end).trim(),
       value,
       unit,
       context: before,
+      lead,
       itemId,
     });
   }
   return figures;
 }
 
+/**
+ * Unidades de tiempo: "murió a los 96 años" (una edad) y "fue juez durante 22 años" (una
+ * duración) comparten contexto sin hablar de lo mismo. Para compararlas, también tiene que
+ * coincidir la palabra justo antes de la cifra.
+ */
+const TIME_UNITS = new Set(['years', 'months', 'days', 'hours']);
+
 /** Dos cifras hablan de lo mismo si tienen la misma unidad y comparten contexto. */
 export function sameSubject(a: Figure, b: Figure): boolean {
   if (a.unit !== b.unit || a.unit === null) return false;
+  if (TIME_UNITS.has(a.unit) && a.lead !== b.lead) return false;
   const shared = a.context.filter((t) => b.context.includes(t)).length;
   return shared >= 1;
 }

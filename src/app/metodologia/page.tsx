@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { site } from '@/config/site';
 import { editorial } from '@/config/editorial';
+import { realSources } from '@/config/sources';
 import { verificationLabel } from '@/domain/labels';
-import type { VerificationStatus } from '@/domain/types';
+import type { SourceKind, VerificationStatus } from '@/domain/types';
 import { Breadcrumbs } from '@/components/article/Breadcrumbs';
 import { PageHeader } from '@/components/listing/PageHeader';
 import { Pending, Prose } from '@/components/prose/Prose';
@@ -18,8 +19,8 @@ export const metadata: Metadata = {
 };
 
 const steps = [
-  { title: 'Fuentes', text: 'Seguimos agencias, medios, organismos oficiales y documentos públicos por RSS y APIs. Cada fuente tiene un tipo y un origen editorial registrado.' },
-  { title: 'Recopilación', text: 'Reunimos lo publicado en las últimas horas y lo normalizamos: título, resumen, fecha, enlace y fuente.' },
+  { title: 'Fuentes', text: 'Seguimos medios, agencias y organismos oficiales por sus feeds. Cada fuente tiene un tipo y un origen editorial registrado.' },
+  { title: 'Recopilación', text: 'Reunimos lo publicado en las últimas horas y lo normalizamos: título, resumen, fecha, enlace y fuente. Las coberturas en vivo y las páginas de servicio quedan afuera.' },
   { title: 'Deduplicación', text: 'Agrupamos los ítems que cuentan el mismo hecho. Las réplicas de un mismo cable cuentan como una sola fuente.' },
   { title: 'Investigación', text: 'Para cada hecho leemos la nota completa de cada fuente que lo permite y buscamos las primarias: el documento, el organismo, el dato original.' },
   { title: 'Verificación', text: 'Comparamos fechas, nombres y cifras entre fuentes. Si no coinciden, el hecho se marca para revisión humana.' },
@@ -29,6 +30,18 @@ const steps = [
 ];
 
 const statuses: VerificationStatus[] = ['verified', 'partial', 'developing', 'disputed'];
+
+const sourceGroups: { label: string; kinds: SourceKind[] }[] = [
+  { label: 'Medios nacionales', kinds: ['local_media'] },
+  { label: 'Agencias', kinds: ['news_agency'] },
+  { label: 'Organismos oficiales', kinds: ['official', 'public_document'] },
+  { label: 'Medios internacionales en castellano', kinds: ['international_media'] },
+];
+
+/** Las fuentes que lee el pipeline, agrupadas por tipo (src/config/sources.ts). */
+const followedSources = sourceGroups
+  .map((g) => ({ label: g.label, names: realSources.filter((s) => s.enabled && g.kinds.includes(s.kind)).map((s) => s.name) }))
+  .filter((g) => g.names.length > 0);
 
 export default function MethodologyPage() {
   return (
@@ -85,6 +98,16 @@ export default function MethodologyPage() {
           salen.
         </p>
 
+        <h2 id="fuentes">Qué fuentes leemos</h2>
+        <p>Para detectar y contrastar hechos, seguimos los feeds de estas fuentes:</p>
+        <ul>
+          {followedSources.map((g) => (
+            <li key={g.label}>
+              <strong>{g.label}:</strong> {g.names.join(', ')}.
+            </li>
+          ))}
+        </ul>
+
         <h2 id="lector">Nuestro lector automático</h2>
         <p>
           Para contrastar, un programa lee las notas que publican las fuentes que seguimos. Se identifica como{' '}
@@ -93,6 +116,10 @@ export default function MethodologyPage() {
         <ul>
           <li>respeta el archivo robots.txt de cada sitio;</li>
           <li>no lee notas detrás de un muro de pago ni páginas marcadas como no disponibles para inteligencia artificial;</li>
+          <li>
+            si el modelo que redacta los borradores usa lo que recibe para entrenarse, no le pasa el texto completo de los sitios
+            que se lo prohíben en su robots.txt (por ejemplo, con <code>Google-Extended</code>);
+          </li>
           <li>hace como mucho un pedido cada dos segundos a cada sitio;</li>
           <li>usa el texto solo para verificar y redactar, y no lo guarda ni lo republica.</li>
         </ul>

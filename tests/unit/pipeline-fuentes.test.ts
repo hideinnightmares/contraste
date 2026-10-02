@@ -11,6 +11,7 @@ import { itemFromParts, type SourceConnector } from '@/pipeline/sources/connecto
 import { COMMON_FEED_PATHS, feedLinks } from '@/pipeline/sources/discover';
 import { parseFeed, RssConnector } from '@/pipeline/sources/rss';
 import { citedOutlet, knownOutlets } from '@/pipeline/stages/attribution';
+import { differs, extractFigures, sameSubject } from '@/pipeline/stages/figures';
 import { GEMINI_OPT_OUT_AGENT, GeminiArticleWriter } from '@/pipeline/writers/gemini';
 import { WriterError, type ArticleWriter } from '@/pipeline/writers/writer';
 import type { DraftArticle, ResearchBrief, SourceDefinition } from '@/pipeline/types';
@@ -122,6 +123,23 @@ describe('feeds', () => {
       linked: ['https://diario.test/rss', 'https://diario.test/feeds/politica.xml'],
     });
     expect(COMMON_FEED_PATHS).toContain('/feed');
+  });
+});
+
+describe('cifras de tiempo', () => {
+  const figure = (text: string) => extractFigures(text, 'x')[0];
+
+  it('una edad y una duración no se contradicen aunque hablen de la misma persona', () => {
+    const age = figure('Murió el exjuez de la Corte Suprema Augusto Pérez a los 96 años.');
+    const tenure = figure('El exjuez Augusto Pérez integró la Corte Suprema durante 22 años.');
+    expect([age.unit, age.lead, tenure.unit, tenure.lead]).toEqual(['years', 'los', 'years', 'durante']);
+    expect(sameSubject(age, tenure)).toBe(false);
+  });
+
+  it('dos edades distintas para la misma persona sí se contradicen', () => {
+    const a = figure('Murió el exjuez Augusto Pérez a los 96 años.');
+    const b = figure('El exjuez Augusto Pérez murió a los 86 años.');
+    expect(sameSubject(a, b) && differs(a.value, b.value, 0.02)).toBe(true);
   });
 });
 

@@ -29,7 +29,14 @@ Además redacta con IA y guarda. Con `SUPABASE_URL` y `SUPABASE_SECRET_KEY` en `
 
 Las notas armadas con fuentes de prueba quedan marcadas como demostración (`isDemo`) y **no se guardan en la base** salvo que se agregue `--permitir-demo`. El esquema de las notas rechaza una nota real que cite una fuente de prueba.
 
-**Tope por corrida.** Se redactan como mucho `CONTRASTE_MAX_BORRADORES_POR_CORRIDA` hechos por corrida (4 si no se define). Van primero los que cubren más fuentes independientes; a igual cobertura, los que tienen una fuente primaria (organismo, documento o agencia), y después los más recientes. El resto queda como `deferred` para la próxima corrida, sin leer sus notas. Si Gemini se queda sin cupo, en esa corrida no se intenta más. Así se cuida el cupo gratuito y la duración de cada corrida.
+**Tope por corrida.** Se redactan como mucho `CONTRASTE_MAX_BORRADORES_POR_CORRIDA` hechos por corrida (4 si no se define). El orden de prioridad es este:
+
+1. los que cubren más fuentes independientes;
+2. a igual cobertura, los confirmados antes que los que todas las fuentes dan en condicional;
+3. después, los que tienen una fuente primaria (organismo, documento o agencia);
+4. al final, los más recientes.
+
+Como mucho van 2 de una misma sección por corrida (`config/editorial.ts`, `drafting.maxPerCategoryPerRun`), así una corrida no se llena de deportes. El resto queda como `deferred` para la próxima corrida, sin leer sus notas. Si Gemini se queda sin cupo, en esa corrida no se intenta más. Así se cuida el cupo gratuito y la duración de cada corrida.
 
 **Sin duplicados entre corridas.** Antes de redactar, el pipeline lee de la base qué fuentes citan las notas de los últimos 7 días, en cualquier estado. Un hecho que comparte alguna fuente con una nota existente queda como `already_covered` y no se redacta de nuevo (tampoco gasta cupo de Gemini). Los slugs ya usados tampoco se repiten.
 
@@ -124,7 +131,7 @@ Están en `src/config/sources.ts`. De cada una se lee su feed (título, resumen,
 
 | Fuente | Tipo | Estado |
 | --- | --- | --- |
-| Clarín, La Nación, Infobae, Página/12, Perfil, elDiarioAR, Ámbito, El Cronista | Medios nacionales | Activas |
+| Clarín, La Nación, Infobae, Página/12, Perfil, elDiarioAR, Ámbito, El Cronista | Medios nacionales | Activas. De Clarín, Página/12, Perfil y Ámbito se leen también feeds de secciones, porque el principal trae pocas notas |
 | Noticias Argentinas | Agencia | Activa. Un medio que publica su cable cuenta como NA |
 | Gobierno nacional (argentina.gob.ar) | Oficial | Activa |
 | Noticias ONU | Oficial | Activa |
@@ -154,7 +161,7 @@ El resultado queda en el resumen de la corrida.
 ### Agregar una fuente
 
 1. Revisar las condiciones de uso del medio. Usar un feed para detectar y contrastar hechos no habilita a reproducir su texto; el redactor escribe una nota original y cita la fuente.
-2. Agregarla en `config/sources.ts` con `connector: 'rss'`, la URL del feed, la portada (`site`) y `enabled: true`.
+2. Agregarla en `config/sources.ts` con `connector: 'rss'`, la URL del feed, la portada (`site`) y `enabled: true`. Si el feed principal trae pocas notas, sumar los de sus secciones en `extraFeeds` (`npm run fuentes:probar -- --descubrir` los lista).
 3. Asignar `origin`: dos medios que publican el mismo cable comparten origen. Si otros medios la citan con otro nombre ("NA", "LA NACION"), sumarlo en `aliases`, con sus mayúsculas: así una nota que dice "según informó Clarín" cuenta como Clarín. Las agencias más reproducidas (Noticias Argentinas, EFE, AFP, Reuters, AP y otras) ya están en `wireAgencies`.
 4. Marcar los agregadores (por ejemplo, feeds de búsqueda de noticias) con `discoveryOnly: true`: sirven para detectar temas, nunca cuentan como fuente.
 5. Probarla con `npm run fuentes:probar -- <id>` o abriendo un pull request.
@@ -204,5 +211,5 @@ El sitio es estático: una nota aprobada aparece cuando el sitio se rearma (lo d
 
 - La extracción de cifras y nombres es por reglas: es determinista y auditable, pero puede no ver una cifra escrita en palabras ("dos años") o un nombre de una sola palabra. Por eso es una red de seguridad, no un reemplazo de la revisión humana.
 - La detección de notas que repiten a otro medio busca expresiones de atribución ("según informó", "Fuente:", la firma "(EFE)") seguidas del nombre del medio, con sus mayúsculas. No ve una atribución escrita de otra forma, y un medio cuyo nombre no está configurado ni en la lista de agencias no se reconoce.
-- Las contradicciones se detectan sobre el texto del feed, no sobre la nota completa: en un texto largo, dos cifras con la misma unidad suelen hablar de cosas distintas.
+- Las contradicciones se detectan sobre el título y el resumen del feed, no sobre la nota completa: en un texto largo, dos cifras con la misma unidad suelen hablar de cosas distintas. En las cifras de tiempo (años, meses, días, horas) también tiene que coincidir la palabra anterior: "a los 96 años" (una edad) y "durante 22 años" (una duración) no se comparan.
 - La detección de contradicciones compara cifras con la misma unidad y contexto compartido. No detecta contradicciones de hechos sin números (por ejemplo, "aprobó" frente a "rechazó"); ese caso puede cubrirse con un extractor de afirmaciones basado en un modelo, detrás de la misma interfaz.
