@@ -9,6 +9,9 @@ import { isAllowed, parseRobots, type RobotsRules } from './robots';
  *
  * - Respeta el robots.txt de cada sitio (robot `ContrasteBot`). Si no se puede leer el
  *   robots.txt por un error del sitio, no se lee nada (RFC 9309).
+ * - Respeta también lo que el sitio le prohíbe al proveedor de IA del redactor (`alsoRespect`):
+ *   si ese proveedor usa lo que recibe para entrenar, el texto de un sitio que se lo prohíbe no
+ *   le llega.
  * - No lee notas detrás de un muro de pago: si la página se declara de acceso pago
  *   (`isAccessibleForFree: false` en sus datos estructurados), usa solo el resumen del feed.
  * - Respeta la marca `noai` en `<meta name="robots">`.
@@ -112,10 +115,11 @@ export function truncateText(text: string, maxChars: number): string {
   return (cut > maxChars * 0.5 ? slice.slice(0, cut + 1) : slice).trim();
 }
 
-export type SkipReason = 'robots' | 'paywall' | 'noai' | 'http' | 'not_html' | 'too_large' | 'no_text' | 'error';
+export type SkipReason = 'robots' | 'ai_optout' | 'paywall' | 'noai' | 'http' | 'not_html' | 'too_large' | 'no_text' | 'error';
 
 const SKIP_LABEL: Record<SkipReason, string> = {
   robots: 'su robots.txt no lo permite',
+  ai_optout: 'su robots.txt no deja que la use la IA del redactor',
   paywall: 'está detrás de un muro de pago',
   noai: 'la página pide no ser usada por IA (noai)',
   http: 'el sitio respondió con un error',
@@ -134,7 +138,16 @@ interface FetcherOptions {
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
   log?: (message: string) => void;
+  /**
+   * Otros robots cuyas prohibiciones también se respetan: los del proveedor de IA del redactor,
+   * si usa lo que recibe para entrenar (por ejemplo, `Google-Extended` con Gemini gratis). Ver
+   * `ArticleWriter.optOutAgents`.
+   */
+  alsoRespect?: string[];
 }
+
+/** Si el robots.txt deja usar una dirección: `robots` si nos la prohíbe a nosotros; `ai_optout`, al proveedor de IA. */
+export type Permission = 'ok' | 'robots' | 'ai_optout';
 
 type RobotsVerdict = RobotsRules | 'allow_all' | 'deny_all';
 
@@ -145,6 +158,7 @@ export class WebArticleFetcher implements ArticleFetcher {
   private readonly now: () => number;
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly log: (message: string) => void;
+  private readonly alsoRespect: string[];
   private readonly robots = new Map<string, Promise<RobotsVerdict>>();
   private readonly nextSlot = new Map<string, number>();
   /** Notas que no se leyeron y por qué. */
@@ -157,6 +171,7 @@ export class WebArticleFetcher implements ArticleFetcher {
     this.now = options.now ?? Date.now;
     this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
     this.log = options.log ?? (() => {});
+    this.alsoRespect = options.alsoRespect ?? [];
   }
 
   /** Reserva el turno de forma sincrónica, así los pedidos simultáneos al mismo sitio se ordenan. */
@@ -196,11 +211,14 @@ export class WebArticleFetcher implements ArticleFetcher {
     return verdict;
   }
 
-  private async allowed(url: URL): Promise<boolean> {
+  /** Qué permite el robots.txt del sitio para esta dirección (lo usa también el probador de fuentes). */
+  async permission(url: URL): Promise<Permission> {
     const verdict = await this.robotsFor(url);
-    if (verdict === 'allow_all') return true;
-    if (verdict === 'deny_all') return false;
-    return isAllowed(verdict, BOT_TOKEN, `${url.pathname}${url.search}`);
+    if (verdict === 'allow_all') return 'ok';
+    if (verdict === 'deny_all') return 'robots';
+    const path = `${url.pathname}${url.search}`;
+    if (!isAllowed(verdict, BOT_TOKEN, path)) return 'robots';
+    return this.alsoRespect.every((agent) => isAllowed(verdict, agent, path)) ? 'ok' : 'ai_optout';
   }
 
   private skip(url: string, reason: SkipReason): null {
@@ -217,7 +235,8 @@ export class WebArticleFetcher implements ArticleFetcher {
       return this.skip(rawUrl, 'error');
     }
     if (url.protocol !== 'https:' && url.protocol !== 'http:') return this.skip(rawUrl, 'error');
-    if (!(await this.allowed(url))) return this.skip(rawUrl, 'robots');
+    const permission = await this.permission(url);
+    if (permission !== 'ok') return this.skip(rawUrl, permission);
 
     let html: string;
     try {
@@ -225,8 +244,8 @@ export class WebArticleFetcher implements ArticleFetcher {
       if (!res.ok) return this.skip(rawUrl, 'http');
       // Si una redirección llevó a otra dirección, esa también tiene que estar permitida.
       if (res.url && res.url !== url.toString()) {
-        const final = new URL(res.url);
-        if (!(await this.allowed(final))) return this.skip(rawUrl, 'robots');
+        const final = await this.permission(new URL(res.url));
+        if (final !== 'ok') return this.skip(rawUrl, final);
       }
       const type = res.headers.get('content-type') ?? '';
       if (!/html/i.test(type)) return this.skip(rawUrl, 'not_html');

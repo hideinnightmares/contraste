@@ -15,6 +15,8 @@ export interface SourceDefinition {
   origin: string;
   connector: 'rss' | 'fixture';
   url: string;
+  /** Portada del sitio: el probador de fuentes busca ahí el feed si la `url` deja de andar. */
+  site?: string;
   enabled: boolean;
   /** Solo sirve para descubrir temas (agregadores): nunca cuenta como fuente. */
   discoveryOnly?: boolean;
@@ -129,7 +131,8 @@ export interface ClusterOutcome {
   draft: DraftArticle | null;
   grounding: GroundingReport | null;
   review: ReviewDecision;
-  stage: 'verified' | 'already_covered' | 'awaiting_writer' | 'drafted' | 'writer_failed' | 'save_failed';
+  /** `deferred`: tenía varias fuentes, pero la corrida llegó a su máximo de borradores (o el redactor se quedó sin cupo). */
+  stage: 'verified' | 'already_covered' | 'deferred' | 'awaiting_writer' | 'drafted' | 'writer_failed' | 'save_failed';
   error?: string;
   /** Nota existente que ya cubre este hecho (stage `already_covered`). */
   coveredBy?: string;

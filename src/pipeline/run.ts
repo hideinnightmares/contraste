@@ -1,4 +1,4 @@
-import { sourceDefinitions } from '@/config/sources';
+import { realSources, sourceDefinitions } from '@/config/sources';
 import type { SourceConnector } from './sources/connector';
 import { RssConnector } from './sources/rss';
 import { FixtureConnector } from './sources/fixture';
@@ -12,7 +12,7 @@ import { decideReview } from './stages/review';
 import { draftToArticle, type Publisher } from './stages/publish';
 import type { ArticleWriter } from './writers/writer';
 import { WriterError, resolveSourceIds } from './writers/writer';
-import type { ClusterOutcome, PipelineReport, SourceDefinition, SourceItem } from './types';
+import type { ClusterOutcome, PipelineReport, SourceDefinition, SourceItem, StoryCluster, VerificationReport } from './types';
 
 export interface PipelineOptions {
   /** Ventana de recopilación. */
@@ -24,6 +24,12 @@ export interface PipelineOptions {
   fetcher?: ArticleFetcher;
   publisher?: Publisher | null;
   now?: () => Date;
+  /**
+   * Máximo de hechos que pasan a investigación y redacción en esta corrida. Cuida el cupo
+   * gratuito del redactor y la duración de la corrida. Van primero los que cubren más fuentes
+   * independientes; el resto queda para la próxima. Sin límite si no se indica.
+   */
+  maxDrafts?: number;
   /** Slugs ya usados en el sitio, para no repetir. */
   takenSlugs?: Set<string>;
   /**
@@ -34,10 +40,33 @@ export interface PipelineOptions {
   log?: (message: string) => void;
 }
 
-export function connectorsFor(definitions: SourceDefinition[] = sourceDefinitions): SourceConnector[] {
+export function connectorsFor(definitions: SourceDefinition[] = realSources): SourceConnector[] {
   return definitions
     .filter((d) => d.enabled)
     .map((d) => (d.connector === 'rss' ? new RssConnector(d) : new FixtureConnector(d)));
+}
+
+interface Candidate {
+  cluster: StoryCluster;
+  verification: VerificationReport;
+  category: string | null;
+}
+
+/** Fuentes primarias: el hecho sale de ellas y no de lo que cuenta un medio. */
+const PRIMARY_KINDS = new Set(['official', 'public_document', 'news_agency']);
+const hasPrimarySource = (cluster: StoryCluster) => cluster.items.some((i) => !i.discoveryOnly && PRIMARY_KINDS.has(i.sourceKind));
+
+/**
+ * Orden de redacción: primero lo que cubren más fuentes independientes (lo que más medios
+ * consideran noticia); a igual cobertura, lo que tiene una fuente primaria, y después lo más
+ * reciente.
+ */
+function byPriority(a: Candidate, b: Candidate): number {
+  return (
+    b.verification.independentSources - a.verification.independentSources ||
+    Number(hasPrimarySource(b.cluster)) - Number(hasPrimarySource(a.cluster)) ||
+    b.cluster.lastSeenAt.localeCompare(a.cluster.lastSeenAt)
+  );
 }
 
 /**
@@ -84,32 +113,50 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
   const takenSlugs = options.takenSlugs ?? new Set<string>();
   const covered = options.coveredSourceUrls ?? new Map<string, string>();
   const outcomes: ClusterOutcome[] = [];
+  const candidates: Candidate[] = [];
   for (const cluster of clusters) {
     // Un grupo formado solo por agregadores no es noticia: es una pista.
     if (cluster.items.every((i) => i.discoveryOnly)) continue;
 
-    let verification = verifyCluster(cluster, { outlets });
+    const verification = verifyCluster(cluster, { outlets });
     const { category } = classifyCluster(cluster);
+    const base = { cluster, verification, category, draft: null, grounding: null };
 
     const coveredBy = cluster.items.map((i) => covered.get(i.url)).find((slug) => slug !== undefined);
     if (coveredBy) {
-      outcomes.push({
-        cluster,
-        verification,
-        category,
-        draft: null,
-        grounding: null,
-        review: { decision: 'hold', reasons: [`Ya está cubierto por la nota "${coveredBy}".`] },
-        stage: 'already_covered',
-        coveredBy,
-      });
+      outcomes.push({ ...base, review: { decision: 'hold', reasons: [`Ya está cubierto por la nota "${coveredBy}".`] }, stage: 'already_covered', coveredBy });
       continue;
     }
-    // El texto completo se lee solo para lo que puede llegar a redactarse: un hecho de una sola
-    // fuente queda en espera igual. Con ese texto se vuelve a verificar, porque la nota completa
-    // puede revelar que un medio repite a otro ("según informó…", la firma de una agencia).
+    // Un hecho de una sola fuente queda en espera: no se lee ni se redacta.
+    if (verification.status === 'unverified') {
+      outcomes.push({ ...base, review: decideReview({ verification, category, draft: null, grounding: null }), stage: 'verified' });
+      continue;
+    }
+    candidates.push({ cluster, verification, category });
+  }
+
+  candidates.sort(byPriority);
+  const maxDrafts = options.maxDrafts ?? Number.POSITIVE_INFINITY;
+  let researched = 0;
+  /** Por qué no se redacta nada más en esta corrida: se llegó al máximo o el redactor no tiene cupo. */
+  let stopReason: string | null = null;
+
+  for (const candidate of candidates) {
+    const { cluster, category } = candidate;
+    let { verification } = candidate;
+    if (!stopReason && researched >= maxDrafts) {
+      stopReason = `La corrida llegó al máximo de ${maxDrafts} borradores: se redacta en una próxima.`;
+    }
+    if (stopReason) {
+      outcomes.push({ cluster, verification, category, draft: null, grounding: null, review: { decision: 'hold', reasons: [stopReason] }, stage: 'deferred' });
+      continue;
+    }
+    researched++;
+
+    // Con el texto completo se vuelve a verificar, porque la nota completa puede revelar que un
+    // medio repite a otro ("según informó…", la firma de una agencia).
     let fullTexts = new Map<string, string>();
-    if (verification.status !== 'unverified' && options.fetcher) {
+    if (options.fetcher) {
       fullTexts = await readFullTexts(cluster, options.fetcher);
       if (fullTexts.size > 0) {
         log(`texto completo de ${fullTexts.size} de ${cluster.items.filter((i) => !i.discoveryOnly).length} fuentes: ${cluster.headline}`);
@@ -153,12 +200,15 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
     } catch (err) {
       outcome.stage = 'writer_failed';
       outcome.error = err instanceof WriterError ? err.message : `Error: ${(err as Error).message}`;
-      // Una falla temporal (proveedor saturado o sin cupo) se reintenta en la próxima corrida;
-      // el resto (clave inválida, pedido rechazado) necesita que alguien lo mire.
-      outcome.review =
-        err instanceof WriterError && err.retryable
-          ? { decision: 'hold', reasons: [`La redacción falló por un problema temporal; se reintenta en la próxima corrida. ${outcome.error}`] }
-          : { decision: 'human_review', reasons: [`La redacción falló: ${outcome.error}`] };
+      // Una falla temporal (proveedor saturado o sin cupo) se reintenta en la próxima corrida, y
+      // en esta no se intenta más: cada intento recorre todos los modelos. El resto (clave
+      // inválida, pedido rechazado) necesita que alguien lo mire.
+      if (err instanceof WriterError && err.retryable) {
+        outcome.review = { decision: 'hold', reasons: [`La redacción falló por un problema temporal; se reintenta en la próxima corrida. ${outcome.error}`] };
+        stopReason = 'El redactor no respondió (sin cupo o saturado): se redacta en la próxima corrida.';
+      } else {
+        outcome.review = { decision: 'human_review', reasons: [`La redacción falló: ${outcome.error}`] };
+      }
     }
 
     // Guardado aparte: una falla de la base no es una falla del redactor.
@@ -176,6 +226,8 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
     }
     outcomes.push(outcome);
   }
+  const deferred = outcomes.filter((o) => o.stage === 'deferred').length;
+  if (deferred > 0) log(`${deferred} ${deferred === 1 ? 'hecho con varias fuentes queda' : 'hechos con varias fuentes quedan'} para la próxima corrida`);
 
   return {
     startedAt: startedAt.toISOString(),

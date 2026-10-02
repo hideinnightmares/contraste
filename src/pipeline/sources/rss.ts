@@ -16,22 +16,26 @@ const text = (v: unknown): string => {
 };
 const list = <T>(v: T | T[] | undefined): T[] => (v == null ? [] : Array.isArray(v) ? v : [v]);
 
-/** Parsea RSS 2.0 y Atom. Exportado para tests. */
+/** Parsea RSS 2.0, RSS 1.0 (RDF) y Atom. Exportado para tests. */
 export function parseFeed(xml: string): { url: string; title: string; summary: string; content?: string; publishedAt: string }[] {
   const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@_', processEntities: true, htmlEntities: true });
   const doc = parser.parse(xml) as Node;
 
-  const rss = doc.rss as Node | undefined;
-  if (rss) {
-    const channel = rss.channel as Node;
-    return list(channel?.item as Node | Node[]).map((item) => ({
-      url: text(item.link) || text(item.guid),
+  const fromItems = (items: Node[]) =>
+    items.map((item) => ({
+      url: text(item.link) || text(item.guid) || String(item['@_rdf:about'] ?? ''),
       title: text(item.title),
       summary: text(item.description),
       content: text(item['content:encoded']) || undefined,
       publishedAt: toIso(text(item.pubDate) || text(item['dc:date'])),
     }));
-  }
+
+  const rss = doc.rss as Node | undefined;
+  if (rss) return fromItems(list((rss.channel as Node)?.item as Node | Node[]));
+
+  // RSS 1.0: los ítems van al lado del canal, no adentro.
+  const rdf = doc['rdf:RDF'] as Node | undefined;
+  if (rdf) return fromItems([...list(rdf.item as Node | Node[]), ...list((rdf.channel as Node)?.item as Node | Node[])]);
 
   const feed = doc.feed as Node | undefined;
   if (feed) {

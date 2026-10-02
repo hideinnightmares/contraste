@@ -17,7 +17,11 @@ import { draftJsonSchema, draftSchema } from './draft-schema';
  *   un borrador mal formado no avanza.
  * - Requiere GEMINI_API_KEY (en .env.pipeline, nunca en .env.local).
  * - En el plan gratuito, Google usa lo enviado para mejorar sus productos: el
- *   dossier tiene solo texto de fuentes públicas, nunca datos personales.
+ *   dossier tiene solo texto de fuentes públicas, nunca datos personales. Y no lleva
+ *   el texto completo de los sitios que le prohíben a Google usar sus notas para
+ *   Gemini (`Google-Extended` en su robots.txt): de esos, solo el resumen del feed.
+ *   Con el plan pago (CONTRASTE_GEMINI_PLAN=pago), Google no usa los datos y esa
+ *   restricción no aplica.
  */
 
 export const DEFAULT_GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
@@ -46,8 +50,12 @@ interface GeminiWriterOptions {
 
 type Attempt = { draft: DraftArticle } | { failure: string; transient: boolean };
 
+/** Robot con el que un sitio le prohíbe a Google usar sus notas para Gemini. */
+export const GEMINI_OPT_OUT_AGENT = 'Google-Extended';
+
 export class GeminiArticleWriter implements ArticleWriter {
   readonly name = 'gemini';
+  readonly optOutAgents: string[];
   private readonly client: GeminiClient;
   private readonly models: string[];
   private readonly retryDelayMs: number;
@@ -63,6 +71,7 @@ export class GeminiArticleWriter implements ArticleWriter {
       .map((m) => m.trim())
       .filter(Boolean);
     this.models = options.models ?? (fromEnv?.length ? fromEnv : DEFAULT_GEMINI_MODELS);
+    this.optOutAgents = process.env.CONTRASTE_GEMINI_PLAN?.trim().toLowerCase() === 'pago' ? [] : [GEMINI_OPT_OUT_AGENT];
     this.retryDelayMs = options.retryDelayMs ?? RETRY_DELAY_MS;
     this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   }

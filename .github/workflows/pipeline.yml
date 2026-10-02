@@ -1,0 +1,57 @@
+# Corre el pipeline: lee las fuentes, agrupa y verifica los hechos, redacta borradores con Gemini y
+# los guarda en la base para la mesa de redacción. Ver docs/AUTOMATIZACION.md, "Corrida programada".
+#
+# Cuándo corre:
+# - cada 2 horas, de 8 a 22 de Buenos Aires, solo si la variable del repositorio
+#   CONTRASTE_PIPELINE_ACTIVO vale "true" (así se activa y se pausa sin tocar el código);
+# - a mano, desde la pestaña Actions, aunque la variable no esté (para probarlo).
+#
+# Secretos: GEMINI_API_KEY (Google AI Studio) y SUPABASE_SECRET_KEY (la clave secreta de Supabase,
+# sb_secret_…). La dirección de la base y la del sitio salen de .env.production.
+#
+# Variables opcionales: CONTRASTE_MAX_BORRADORES_POR_CORRIDA (4 si no se define),
+# CONTRASTE_REVIEW_MODE ("human" si no se define: todo pasa por la mesa) y CONTRASTE_GEMINI_PLAN
+# ("pago" cuando se contrate el plan pago de Gemini).
+#
+# Cupo: unos 3 minutos facturados por corrida, 8 corridas por día (ver docs/DESPLIEGUE.md).
+name: Pipeline de noticias
+
+on:
+  schedule:
+    - cron: '23 11-23/2 * * *' # 08:23 a 20:23 de Buenos Aires, cada 2 horas
+    - cron: '23 1 * * *' # 22:23 de Buenos Aires
+  workflow_dispatch:
+
+# Una corrida a la vez: dos juntas podrían redactar el mismo hecho, porque cada una lee al empezar
+# qué notas ya existen.
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  pipeline:
+    if: github.event_name == 'workflow_dispatch' || vars.CONTRASTE_PIPELINE_ACTIVO == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Correr el pipeline
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          CONTRASTE_MAX_BORRADORES_POR_CORRIDA: ${{ vars.CONTRASTE_MAX_BORRADORES_POR_CORRIDA || 4 }}
+          CONTRASTE_REVIEW_MODE: ${{ vars.CONTRASTE_REVIEW_MODE || 'human' }}
+          CONTRASTE_GEMINI_PLAN: ${{ vars.CONTRASTE_GEMINI_PLAN }}
+        run: npm run pipeline -- --write --save

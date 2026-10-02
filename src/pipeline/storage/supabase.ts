@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { articleSchema } from '@/domain/schema';
 import type { Article } from '@/domain/types';
 import type { Publisher } from '../stages/publish';
+import { compactReport } from '../report';
 import type { PipelineReport } from '../types';
 
 /**
@@ -90,7 +91,10 @@ export class SupabaseStore implements Publisher {
     return `base de datos (${data.status})`;
   }
 
-  /** Guarda el informe de la corrida y le asigna las notas guardadas en ella. Devuelve su id. */
+  /**
+   * Guarda el informe de la corrida (compacto, ver report.ts) y le asigna las notas guardadas en
+   * ella. Devuelve su id.
+   */
   async recordRun(report: PipelineReport): Promise<string> {
     const { data, error } = await this.db
       .from('pipeline_runs')
@@ -99,7 +103,7 @@ export class SupabaseStore implements Publisher {
         finished_at: report.finishedAt,
         collected: report.collected,
         clusters: report.clusters,
-        report,
+        report: compactReport(report),
       })
       .select('id')
       .single();
