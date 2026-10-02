@@ -1,6 +1,7 @@
 import { editorial } from '@/config/editorial';
 import type { Claim, Confidence, Contradiction, VerificationStatus } from '@/domain/types';
-import type { Figure, SourceItem, StoryCluster, VerificationReport } from '../types';
+import type { Figure, KnownOutlet, SourceItem, StoryCluster, VerificationReport } from '../types';
+import { citedOutlet, knownOutlets } from './attribution';
 import { differs, extractFigures, sameSubject } from './figures';
 import { hedged, jaccard, stemSet } from '../text';
 
@@ -10,11 +11,21 @@ const SYNDICATION_SIMILARITY = 0.85;
 
 const itemText = (it: SourceItem) => `${it.title}. ${it.summary} ${it.content ?? ''}`;
 
+let defaultOutlets: KnownOutlet[] | null = null;
+
+export interface VerifyOptions {
+  /** Texto completo de cada ítem que se pudo leer (stages/research.ts), por id. */
+  fullTexts?: Map<string, string>;
+  /** Medios que una nota puede citar. Por defecto, los configurados y las agencias conocidas. */
+  outlets?: KnownOutlet[];
+}
+
 /**
  * Verificación de un grupo de ítems.
  *
  * 1. Descarta agregadores (solo sirven para descubrir) y agrupa por origen
- *    editorial; además detecta réplicas por similitud de texto.
+ *    editorial. Una nota que atribuye su información a otro medio o lleva la firma de una
+ *    agencia cuenta como ese medio; además detecta réplicas por similitud de texto.
  * 2. Extrae cifras de cada fuente y compara las que hablan de lo mismo: si
  *    difieren más que la tolerancia, registra una contradicción.
  * 3. Asigna estado y confianza con reglas explícitas.
@@ -22,17 +33,26 @@ const itemText = (it: SourceItem) => `${it.title}. ${it.summary} ${it.content ??
  * No decide qué es verdad: decide qué está respaldado por más de una fuente
  * independiente y qué necesita a una persona.
  */
-export function verifyCluster(cluster: StoryCluster): VerificationReport {
+export function verifyCluster(cluster: StoryCluster, options: VerifyOptions = {}): VerificationReport {
+  const outlets = options.outlets ?? (defaultOutlets ??= knownOutlets());
   const reasons: string[] = [];
   const usable = cluster.items.filter((it) => !it.discoveryOnly);
   const discovery = cluster.items.length - usable.length;
   if (discovery > 0) reasons.push(`${discovery} ítem(s) de agregadores usados solo para detectar el tema.`);
 
-  // Orígenes efectivos: el declarado, salvo que el texto sea una réplica de otro.
+  // Orígenes efectivos: el declarado, salvo que la nota repita a otro medio (lo cita o lleva
+  // su firma) o que su texto sea una réplica de otro.
   const effectiveOrigin = new Map<string, string>();
   const stemmed = usable.map((it) => stemSet(itemText(it)));
   usable.forEach((it, i) => {
     let origin = it.origin;
+    // Un organismo que cita a un medio no lo repite: publica su propia información.
+    const official = it.sourceKind === 'official' || it.sourceKind === 'public_document';
+    const cited = official ? null : citedOutlet(`${itemText(it)}\n${options.fullTexts?.get(it.id) ?? ''}`, outlets, it.origin);
+    if (cited) {
+      origin = cited.origin;
+      reasons.push(`"${it.sourceName}" atribuye la información a ${cited.name}: cuenta como esa fuente.`);
+    }
     for (let j = 0; j < i; j++) {
       if (usable[j].origin !== it.origin && jaccard(stemmed[i], stemmed[j]) >= SYNDICATION_SIMILARITY) {
         origin = effectiveOrigin.get(usable[j].id)!;

@@ -10,7 +10,8 @@ import { differs, extractFigures } from './figures';
  * datos inventados por el modelo; si falla, la nota va a revisión humana.
  */
 export function checkGrounding(draft: DraftArticle, brief: ResearchBrief): GroundingReport {
-  const sourceText = brief.sources.map((s) => s.text).join('\n');
+  // El nombre de cada fuente cuenta como dato de la fuente: el redactor lo usa para atribuir.
+  const sourceText = brief.sources.map((s) => `${s.name}\n${s.text}`).join('\n');
   const sourceFigures = extractFigures(sourceText, 'sources');
   const draftText = [draft.title, draft.dek, bodyText(draft.body)].join('\n');
 

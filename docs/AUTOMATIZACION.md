@@ -34,13 +34,29 @@ Para correrlo de forma periódica, la opción gratis prevista es un flujo progra
 | Fuentes | `config/sources.ts`, `sources/` | Conectores RSS/Atom (real, con límite de tiempo y tamaño) y de prueba. Cada fuente declara tipo y origen editorial |
 | Recopilación | `run.ts` | Corre los conectores en paralelo. Una fuente que falla queda registrada y no frena al resto |
 | Deduplicación | `stages/dedupe.ts` | Agrupa ítems del mismo hecho por URL canónica o superposición de raíces del título dentro de 36 horas |
-| Investigación | `stages/research.ts` | Arma el dossier para el redactor. Punto de extensión: `ArticleFetcher` para traer el texto completo y buscar fuentes primarias |
-| Verificación | `stages/verify.ts`, `stages/figures.ts` | Cuenta fuentes independientes (excluye agregadores y detecta réplicas por similitud de texto), extrae cifras en formato argentino y detecta contradicciones entre fuentes, marca el lenguaje condicional |
+| Investigación | `stages/research.ts`, `sources/article.ts` | Lee el texto completo de cada nota (ver [Lectura del texto completo](#lectura-del-texto-completo)) y arma el dossier para el redactor |
+| Verificación | `stages/verify.ts`, `stages/attribution.ts`, `stages/figures.ts` | Cuenta fuentes independientes: excluye agregadores, detecta réplicas por similitud de texto y cuenta como un solo medio a las notas que repiten a otro ("según informó…", la firma de una agencia). Extrae cifras en formato argentino, detecta contradicciones entre fuentes y marca el lenguaje condicional. Con el texto completo, vuelve a verificar |
 | Clasificación | `stages/classify.ts` | Asigna sección por palabras clave de `config/categories.ts` |
 | Redacción | `writers/` | Gemini (o Claude) escribe un borrador original solo con la información del dossier, con salida estructurada validada. En el dossier las fuentes se llaman F1, F2…; al volver, las citas se traducen a los ids reales (`resolveSourceIds`) |
 | Control | `stages/grounding.ts` | Rechaza borradores con cifras o nombres propios que no estén en las fuentes, o que den un mismo dato como confirmado y no confirmado |
 | Revisión | `stages/review.ts` | Decide: publicación automática, revisión humana o espera |
 | Publicación y SEO | `stages/publish.ts`, `storage/supabase.ts` | Convierte el borrador en una nota válida (slug único, metadatos, fuentes, verificación) y la guarda en la base. Si el guardado falla, el hecho queda como `save_failed` (no se confunde con una falla del redactor) |
+
+## Lectura del texto completo
+
+El feed de un medio trae el título y un resumen. Para que el redactor trabaje con los hechos, el pipeline lee la nota completa de cada fuente (`WebArticleFetcher`, `sources/article.ts`), solo de los hechos que ya tienen más de una fuente: lo que queda en espera no se lee.
+
+- **Se presenta como `ContrasteBot`**, con un enlace a la explicación pública (`/metodologia#lector`). Un sitio que no quiera que lo leamos lo pone en su robots.txt (`User-agent: ContrasteBot` / `Disallow: /`).
+- **Respeta el robots.txt** de cada sitio según el estándar (RFC 9309). Si el robots.txt da un error del sitio, no lee nada de ese sitio.
+- **No lee notas pagas:** si la página se declara de acceso pago (`isAccessibleForFree: false` en sus datos estructurados), usa solo el resumen del feed. Tampoco usa las páginas marcadas `noai`.
+- **Lee despacio:** un pedido cada 2 segundos por sitio, con límite de tiempo (15 s) y de tamaño (3 MB).
+- **Toma solo el texto de la nota:** el cuerpo que la página declara en sus datos estructurados o, si no hay, los párrafos de `<article>`, sin epígrafes ni recomendados. Hasta 8.000 caracteres por fuente.
+- **No guarda el texto ajeno:** se usa para verificar y redactar, y no entra en la base ni en los informes.
+- Las fuentes de prueba no se leen.
+
+Con el texto completo se vuelve a verificar: si una nota resulta ser un cable de agencia ("BUENOS AIRES (NA).-") o atribuye la información a otro medio ("según informó…"), cuenta como esa agencia o ese medio, y un hecho que parecía tener dos fuentes puede quedar con una sola y en espera.
+
+**Base legal.** La ley de propiedad intelectual (11.723) protege la forma en que está escrita una nota, no los hechos (art. 1), y permite usar las noticias de interés general citando la fuente (art. 28). Por eso el redactor escribe una nota propia, no copia frases y atribuye cada dato a su fuente en el texto. Las condiciones de uso de cada sitio pueden poner límites adicionales: revisarlas al agregar una fuente.
 
 ## Estados de verificación
 
@@ -70,6 +86,7 @@ Para correrlo de forma periódica, la opción gratis prevista es un flujo progra
 Lo común a los dos:
 
 - Instrucciones fijas en `writers/writer.ts`: usar solo el dossier, no copiar frases, no inventar citas, exponer contradicciones sin elegir una versión, separar hechos de interpretación, títulos sin clickbait.
+- **Atribución en el texto:** cada dato va atribuido a su fuente por su nombre ("según el INDEC", "informó Infobae"); si hay fuentes oficiales, la nota se apoya en ellas. Una acusación contra una persona identificable va siempre atribuida y, si no está confirmada, en condicional (es lo que pide la jurisprudencia argentina, doctrina "Campillay", para no responder por información de terceros). El control posterior acepta los nombres de las fuentes.
 - Salida estructurada (`writers/draft-schema.ts`, Zod): título, bajada, cuerpo en bloques, sección, etiquetas, descripción SEO y afirmaciones con las fuentes que las respaldan. Una respuesta que no cumple el esquema se descarta.
 - El borrador registra qué modelo lo escribió (por ejemplo, `gemini:gemini-3.5-flash-lite`).
 - Un borrador generado por IA es siempre un borrador: el control posterior y la política de revisión deciden qué pasa después.
@@ -93,7 +110,7 @@ Lo común a los dos:
 
 1. Revisar las condiciones de uso de cada medio. Usar un feed para detectar y contrastar hechos no habilita a reproducir su texto; el redactor escribe una nota original y cita la fuente.
 2. Agregar la fuente en `config/sources.ts` con `connector: 'rss'`, su URL y `enabled: true`.
-3. Asignar `origin`: dos medios que publican el mismo cable comparten origen.
+3. Asignar `origin`: dos medios que publican el mismo cable comparten origen. Si otros medios la citan con otro nombre ("NA", "diario Clarín"), sumarlo en `aliases`, con sus mayúsculas: así una nota que dice "según informó Clarín" cuenta como Clarín. Las agencias más reproducidas (Noticias Argentinas, EFE, AFP, Reuters, AP y otras) ya están en `wireAgencies`.
 4. Marcar los agregadores (por ejemplo, feeds de búsqueda de noticias) con `discoveryOnly: true`: sirven para detectar temas, nunca cuentan como fuente.
 5. Para APIs de noticias, implementar `SourceConnector` (`sources/connector.ts`) y sumarlo en `connectorsFor()`.
 
@@ -104,4 +121,6 @@ El sitio es estático: una nota aprobada aparece cuando el sitio se rearma (lo d
 ## Límites conocidos
 
 - La extracción de cifras y nombres es por reglas: es determinista y auditable, pero puede no ver una cifra escrita en palabras ("dos años") o un nombre de una sola palabra. Por eso es una red de seguridad, no un reemplazo de la revisión humana.
+- La detección de notas que repiten a otro medio busca expresiones de atribución ("según informó", "Fuente:", la firma "(EFE)") seguidas del nombre del medio, con sus mayúsculas. No ve una atribución escrita de otra forma, y un medio cuyo nombre no está configurado ni en la lista de agencias no se reconoce.
+- Las contradicciones se detectan sobre el texto del feed, no sobre la nota completa: en un texto largo, dos cifras con la misma unidad suelen hablar de cosas distintas.
 - La detección de contradicciones compara cifras con la misma unidad y contexto compartido. No detecta contradicciones de hechos sin números (por ejemplo, "aprobó" frente a "rechazó"); ese caso puede cubrirse con un extractor de afirmaciones basado en un modelo, detrás de la misma interfaz.
