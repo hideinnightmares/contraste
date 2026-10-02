@@ -6,7 +6,8 @@ import type { Article } from '@/domain/types';
  * pedidos que hace supabase-js desde la página: inicio de sesión (`/auth/v1`) y datos
  * (`/rest/v1`, PostgREST). Imita lo del servidor que le importa a la pantalla:
  *
- * - solo una persona que está en `editors` ve notas;
+ * - solo una persona que está en `editors` ve notas, y solo con la verificación en dos pasos
+ *   (sesión `aal2`): con la contraseña sola, la base no devuelve nada;
  * - una actualización exige la misma `updated_at` que se leyó (si no, no cambia nada);
  * - al publicar, la base pone la fecha y la firma, y rechaza lo que las reglas no permiten
  *   (trigger `private.articles_reglas`, ver supabase/migrations).
@@ -14,8 +15,24 @@ import type { Article } from '@/domain/types';
  * Todas las notas son de demostración: fuentes ficticias en example.com.
  */
 
+/** Editora con la app de autenticación ya configurada. */
 export const EDITOR = { id: '7d3c1a52-0b1e-4c55-9a0e-2f6b8c1d4e90', email: 'editora@example.com', password: 'clave-de-prueba' };
+/** Editor que todavía no configuró la app: la mesa se la hace configurar. */
+export const NEW_EDITOR = { id: '3b9d2c7e-4a1f-4e6b-8c5d-9e0f1a2b3c4d', email: 'editor.nuevo@example.com', password: 'clave-de-prueba' };
 export const OUTSIDER = { id: '1f0e9d8c-7b6a-4c3d-8e2f-1a0b9c8d7e6f', email: 'lector@example.com', password: 'clave-de-prueba' };
+/** El único código que la app simulada da por bueno. */
+export const TOTP_CODE = '123456';
+const USERS = [EDITOR, NEW_EDITOR, OUTSIDER];
+
+type Level = 'aal1' | 'aal2';
+interface Factor {
+  id: string;
+  friendly_name: string;
+  factor_type: 'totp';
+  status: 'verified' | 'unverified';
+  created_at: string;
+  updated_at: string;
+}
 
 export interface Row {
   id: string;
@@ -176,7 +193,7 @@ export function fixtureRows(): Row[] {
 const CORS = {
   'access-control-allow-origin': '*',
   'access-control-allow-headers': '*',
-  'access-control-allow-methods': 'GET, POST, PATCH, OPTIONS',
+  'access-control-allow-methods': 'GET, POST, PATCH, DELETE, OPTIONS',
   'access-control-expose-headers': 'content-range',
 };
 
@@ -185,18 +202,29 @@ function base64url(value: object): string {
 }
 
 /** Un JWT con la forma correcta (la firma no se controla: lo lee solo este simulador). */
-function accessToken(user: { id: string; email: string }): string {
-  const exp = Math.floor(Date.now() / 1000) + 3600;
-  return `${base64url({ alg: 'HS256', typ: 'JWT' })}.${base64url({ sub: user.id, email: user.email, role: 'authenticated', aud: 'authenticated', exp })}.firma`;
+function accessToken(user: { id: string; email: string }, aal: Level, serial: number): string {
+  const now = Math.floor(Date.now() / 1000);
+  const amr = aal === 'aal2' ? [{ method: 'totp', timestamp: now }, { method: 'password', timestamp: now }] : [{ method: 'password', timestamp: now }];
+  const payload = { sub: user.id, email: user.email, role: 'authenticated', aud: 'authenticated', exp: now + 3600, aal, amr, session_id: `s${serial}` };
+  return `${base64url({ alg: 'HS256', typ: 'JWT' })}.${base64url(payload)}.${Buffer.from('firma de prueba').toString('base64url')}`;
 }
+
+/** Un QR cualquiera: la app simulada no lo lee. Sin "#", que cortaría la dirección de la imagen. */
+const QR_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21" width="200" height="200"><rect width="21" height="21" fill="white"/><path d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1zM10 10h2v2h-2zM14 14h3v3h-3z" fill="black"/></svg>';
 
 export class FakeSupabase {
   readonly rows: Row[];
-  readonly editors = new Set([EDITOR.id]);
+  readonly editors = new Set([EDITOR.id, NEW_EDITOR.id]);
+  /** Apps de autenticación de cada usuario. La editora ya tiene la suya. */
+  readonly factors = new Map<string, Factor[]>([
+    [EDITOR.id, [{ id: 'f-editora', friendly_name: 'Mesa de redacción', factor_type: 'totp', status: 'verified', created_at: T0, updated_at: T0 }]],
+  ]);
   /** Lo que la página mandó a guardar, en orden. */
   readonly saves: { id: string; document: Article }[] = [];
-  private readonly sessions = new Map<string, string>();
+  private readonly sessions = new Map<string, { userId: string; aal: Level }>();
   private clock = 0;
+  private serial = 0;
 
   constructor(rows: Row[] = fixtureRows()) {
     this.rows = rows;
@@ -227,30 +255,81 @@ export class FakeSupabase {
     return route.fulfill({ status, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify(body) });
   }
 
+  private user(id: string) {
+    const user = USERS.find((u) => u.id === id)!;
+    return {
+      id: user.id,
+      aud: 'authenticated',
+      role: 'authenticated',
+      email: user.email,
+      app_metadata: {},
+      user_metadata: {},
+      created_at: T0,
+      factors: this.factors.get(user.id) ?? [],
+    };
+  }
+
+  /** Abre una sesión del nivel pedido, como la devuelve Supabase Auth. */
+  private session(userId: string, aal: Level) {
+    const token = accessToken(USERS.find((u) => u.id === userId)!, aal, ++this.serial);
+    this.sessions.set(token, { userId, aal });
+    return {
+      access_token: token,
+      token_type: 'bearer',
+      expires_in: 3600,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      refresh_token: `renovar-${this.serial}`,
+      user: this.user(userId),
+    };
+  }
+
   private async auth(route: Route) {
     const request = route.request();
     if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS });
-    const url = new URL(request.url());
-    if (url.pathname.endsWith('/token')) {
+    const path = new URL(request.url()).pathname.replace(/^.*\/auth\/v1/, '');
+    if (path === '/token') {
       const body = request.postDataJSON() as { email?: string; password?: string };
-      const user = [EDITOR, OUTSIDER].find((u) => u.email === body.email && u.password === body.password);
+      const user = USERS.find((u) => u.email === body.email && u.password === body.password);
       if (!user) return this.json(route, 400, { code: 400, error_code: 'invalid_credentials', msg: 'Invalid login credentials' });
-      const token = accessToken(user);
-      this.sessions.set(token, user.id);
+      return this.json(route, 200, this.session(user.id, 'aal1'));
+    }
+    if (path === '/logout') return route.fulfill({ status: 204, headers: CORS });
+
+    const current = this.sessionOf(route);
+    if (!current) return this.json(route, 401, { code: 401, error_code: 'no_authorization', msg: 'This endpoint requires a valid Bearer token' });
+    const factors = this.factors.get(current.userId) ?? [];
+    if (path === '/user' && request.method() === 'GET') return this.json(route, 200, this.user(current.userId));
+
+    if (path === '/factors' && request.method() === 'POST') {
+      const factor: Factor = { id: `f-${++this.serial}`, friendly_name: 'Mesa de redacción', factor_type: 'totp', status: 'unverified', created_at: T0, updated_at: T0 };
+      this.factors.set(current.userId, [...factors, factor]);
       return this.json(route, 200, {
-        access_token: token,
-        token_type: 'bearer',
-        expires_in: 3600,
-        expires_at: Math.floor(Date.now() / 1000) + 3600,
-        refresh_token: `renovar-${user.id}`,
-        user: { id: user.id, aud: 'authenticated', role: 'authenticated', email: user.email, app_metadata: {}, user_metadata: {}, created_at: T0 },
+        id: factor.id,
+        type: 'totp',
+        friendly_name: factor.friendly_name,
+        totp: { qr_code: QR_SVG, secret: 'JBSWY3DPEHPK3PXP', uri: 'otpauth://totp/Contraste:prueba?secret=JBSWY3DPEHPK3PXP&issuer=Contraste' },
       });
     }
-    if (url.pathname.endsWith('/logout')) return route.fulfill({ status: 204, headers: CORS });
+    const factorRoute = /^\/factors\/([^/]+)(?:\/(challenge|verify))?$/.exec(path);
+    const factor = factorRoute && factors.find((f) => f.id === factorRoute[1]);
+    if (factorRoute && !factor) return this.json(route, 404, { code: 404, error_code: 'mfa_factor_not_found', msg: 'Factor not found' });
+    if (factor && !factorRoute[2] && request.method() === 'DELETE') {
+      this.factors.set(current.userId, factors.filter((f) => f !== factor));
+      return this.json(route, 200, { id: factor.id });
+    }
+    if (factor && factorRoute[2] === 'challenge') {
+      return this.json(route, 200, { id: `c-${++this.serial}`, type: 'totp', expires_at: Math.floor(Date.now() / 1000) + 300 });
+    }
+    if (factor && factorRoute[2] === 'verify') {
+      const { code } = request.postDataJSON() as { code?: string };
+      if (code !== TOTP_CODE) return this.json(route, 422, { code: 422, error_code: 'mfa_verification_failed', msg: 'Invalid TOTP code entered' });
+      factor.status = 'verified';
+      return this.json(route, 200, this.session(current.userId, 'aal2'));
+    }
     return this.json(route, 404, { msg: 'No simulado' });
   }
 
-  private userOf(route: Route): string | null {
+  private sessionOf(route: Route): { userId: string; aal: Level } | null {
     const token = route.request().headers()['authorization']?.replace(/^Bearer /, '');
     return (token && this.sessions.get(token)) || null;
   }
@@ -261,7 +340,8 @@ export class FakeSupabase {
     const url = new URL(request.url());
     const table = url.pathname.split('/').pop();
     const param = (name: string) => url.searchParams.get(name);
-    const user = this.userOf(route);
+    const current = this.sessionOf(route);
+    const user = current?.userId ?? null;
     const isEditor = user !== null && this.editors.has(user);
 
     if (table === 'editors') {
@@ -270,8 +350,9 @@ export class FakeSupabase {
     }
     if (table !== 'articles') return this.json(route, 404, { code: 'PGRST205', message: `No existe la tabla ${table}` });
 
-    // Regla de acceso: quien no está en la redacción solo ve lo publicado (acá no hace falta más).
-    const visible = this.rows.filter((r) => isEditor || r.document.review.status === 'published');
+    // Reglas de acceso: sin sesión, lo publicado; con sesión, nada sin el segundo paso (regla
+    // restrictiva aal2); con el segundo paso, todo si es editor y lo publicado si no.
+    const visible = current && current.aal !== 'aal2' ? [] : this.rows.filter((r) => isEditor || r.document.review.status === 'published');
     const id = param('id')?.replace(/^eq\./, '');
     const statuses = param('status')?.match(/^in\.\((.*)\)$/)?.[1].split(',');
     const matching = visible.filter((r) => (!id || r.id === id) && (!statuses || statuses.includes(r.document.review.status)));

@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { isEditor, onSessionChange, signOut } from './api';
+import { assuranceLevel, isEditor, onSessionChange, signOut, verifiedFactorId } from './api';
 import { LoginForm } from './LoginForm';
+import { SecondFactor } from './SecondFactor';
 import { DraftList, type ListTab } from './DraftList';
 import { DraftEditor } from './DraftEditor';
 import type { SiteMode } from './model';
@@ -16,13 +17,18 @@ type Gate =
   | { kind: 'loading' }
   | { kind: 'signed-out' }
   | { kind: 'not-editor'; email: string }
+  /** Editor con la contraseña sola: falta el código de la app (o configurarla, sin `factorId`). */
+  | { kind: 'second-factor'; email: string; factorId: string | null }
   | { kind: 'editor'; userId: string; email: string }
   | { kind: 'error'; message: string };
 
 async function gateFor(session: Session | null): Promise<Gate> {
   if (!session) return { kind: 'signed-out' };
   const email = session.user.email ?? '';
-  return (await isEditor(session.user.id)) ? { kind: 'editor', userId: session.user.id, email } : { kind: 'not-editor', email };
+  if (!(await isEditor(session.user.id))) return { kind: 'not-editor', email };
+  const level = await assuranceLevel();
+  if (level.current === 'aal2') return { kind: 'editor', userId: session.user.id, email };
+  return { kind: 'second-factor', email, factorId: level.next === 'aal2' ? await verifiedFactorId() : null };
 }
 
 const TABS: ListTab[] = ['revision', 'publicadas', 'descartadas'];
@@ -62,7 +68,7 @@ export function Desk({ site }: { site: SiteMode }) {
   const noteId = params.get('nota');
   const tabParam = params.get('estado');
   const tab: ListTab = TABS.includes(tabParam as ListTab) ? (tabParam as ListTab) : 'revision';
-  const email = gate.kind === 'editor' || gate.kind === 'not-editor' ? gate.email : null;
+  const email = gate.kind === 'editor' || gate.kind === 'not-editor' || gate.kind === 'second-factor' ? gate.email : null;
 
   return (
     <>
@@ -89,6 +95,7 @@ export function Desk({ site }: { site: SiteMode }) {
           </p>
         )}
         {gate.kind === 'signed-out' && <LoginForm />}
+        {gate.kind === 'second-factor' && <SecondFactor factorId={gate.factorId} />}
         {gate.kind === 'not-editor' && (
           <div className={styles.error} role="alert">
             <p>

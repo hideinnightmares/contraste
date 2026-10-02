@@ -1,0 +1,63 @@
+# Copia de seguridad diaria de la base de datos. El plan gratis de Supabase no hace copias: este
+# flujo guarda una por día en GitHub (pestaña Actions > la corrida > Artifacts) durante 30 días.
+# Cómo restaurar: docs/BASE-DE-DATOS.md, "Copias de seguridad".
+#
+# Guarda la estructura completa (tablas, reglas de acceso, funciones y triggers) y los datos del
+# diario (esquema public). No guarda las cuentas de la mesa (esquema auth): tienen contraseñas
+# cifradas y las claves de la verificación en dos pasos, y se vuelven a crear a mano.
+#
+# Usa el secreto SUPABASE_DB_URL, el mismo que aplica las migraciones.
+name: Respaldar la base de datos
+
+on:
+  schedule:
+    - cron: '41 6 * * *' # 03:41 de Buenos Aires
+  workflow_dispatch:
+
+concurrency:
+  group: respaldar-base
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  respaldar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      # La CLI de Supabase, en la misma versión que aplica las migraciones. Corre pg_dump dentro
+      # de un contenedor de Docker (ya instalado en los equipos de GitHub).
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Exportar la base
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          mkdir -p respaldo
+          npx supabase db dump --db-url "$SUPABASE_DB_URL" -f respaldo/roles.sql --role-only
+          npx supabase db dump --db-url "$SUPABASE_DB_URL" -f respaldo/esquema.sql
+          npx supabase db dump --db-url "$SUPABASE_DB_URL" -f respaldo/datos.sql --use-copy --data-only --schema public
+          ls -l respaldo
+
+      # Una copia sin la tabla de notas no sirve: mejor que el flujo falle y se vea en Actions.
+      - name: Controlar la copia
+        run: |
+          grep -qi 'create table.*articles' respaldo/esquema.sql
+          grep -qi 'copy .*articles' respaldo/datos.sql
+          echo "Notas en la copia: $(awk '/^COPY .*articles/{f=1;next} /^\\\.$/{f=0} f' respaldo/datos.sql | wc -l)"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: respaldo-base-${{ github.run_number }}
+          path: respaldo/
+          retention-days: 30
+          if-no-files-found: error

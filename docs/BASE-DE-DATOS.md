@@ -20,7 +20,7 @@ Todas las tablas tienen RLS. El proyecto se creó con "Automatically expose new 
 | Rol | Puede |
 | --- | --- |
 | Visitante (`anon`) o usuario logueado | Leer notas publicadas con fecha ya cumplida. Lo usa el armado del sitio |
-| Editor (está en `editors`) | Leer y editar todas las notas; ver historial e informes del pipeline |
+| Editor (está en `editors`), con la verificación en dos pasos | Leer y editar todas las notas; ver historial e informes del pipeline. Con la contraseña sola (sin el código de la app), nada |
 | Pipeline (`service_role`, clave secreta) | Crear y actualizar notas e informes |
 | Nadie por la API | Borrar notas, escribir el historial, agregar editores |
 
@@ -86,4 +86,30 @@ con `begin;` al principio del archivo y sin `commit`. Requiere `npx supabase log
 - 500 MB de base de datos y 5 GB de transferencia por mes.
 - **El proyecto se pausa después de 7 días sin uso.** Cuando el pipeline y el armado diario lean y escriban en la base, la van a usar todos los días. Mientras tanto puede pausarse; se reactiva desde el panel.
 - Dos proyectos activos gratis en total, contando todas las organizaciones de la cuenta.
-- **El plan gratis no tiene copias de seguridad automáticas.** Supabase recomienda exportar la base con `npx supabase db dump` y guardar la copia fuera de Supabase. Cuando haya notas reales, conviene automatizarlo.
+- **El plan gratis no tiene copias de seguridad automáticas.** Las hace el flujo de GitHub "Respaldar la base de datos" (ver abajo).
+
+## Copias de seguridad
+
+`.github/workflows/respaldar-base.yml` exporta la base todos los días a las 03:41 de Buenos Aires con `supabase db dump`, como recomienda Supabase, y guarda la copia en GitHub durante 30 días: pestaña *Actions* > "Respaldar la base de datos" > una corrida > *Artifacts*. Usa el secreto `SUPABASE_DB_URL`, el mismo de las migraciones. También se puede correr a mano desde esa pestaña (*Run workflow*).
+
+Cada copia tiene tres archivos:
+
+| Archivo | Qué tiene |
+| --- | --- |
+| `roles.sql` | Roles propios de la base (hoy, ninguno) |
+| `esquema.sql` | Toda la estructura: tablas, reglas de acceso, funciones y triggers |
+| `datos.sql` | Los datos del diario (esquema `public`): notas, historial, informes del pipeline y editores |
+
+**Qué no tiene:** las cuentas de la mesa (esquema `auth`, con contraseñas cifradas y las claves de la verificación en dos pasos) ni el token de GitHub guardado en Vault. Si el flujo falla (por ejemplo, porque la copia no tiene la tabla de notas), GitHub avisa por email, si están activadas las notificaciones de Actions.
+
+**Restaurar** en un proyecto nuevo de Supabase (o en este, si se perdieron datos), con `psql` y la cadena de conexión del *Session pooler* del proyecto de destino:
+
+```bash
+psql --single-transaction --variable ON_ERROR_STOP=1 \
+  --file roles.sql --file esquema.sql \
+  --command 'SET session_replication_role = replica' \
+  --file datos.sql \
+  --dbname "CADENA_DE_CONEXION"
+```
+
+Después: crear de nuevo los usuarios de la redacción (*Authentication > Users*), actualizar `editors` con sus ids nuevos, volver a guardar `github_dispatch_token` en Vault y, si el proyecto es otro, actualizar la dirección y las claves en `.env.production`, `.env.pipeline` y los secretos de GitHub.

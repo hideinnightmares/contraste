@@ -78,7 +78,7 @@ test('movil', async ({ browser }) => {
 });
 
 test('mesa de redacción', async ({ browser }) => {
-  const { EDITOR, FakeSupabase } = await import('../e2e/supabase-mock');
+  const { EDITOR, FakeSupabase, NEW_EDITOR, TOTP_CODE } = await import('../e2e/supabase-mock');
   const shoot = async (options: Parameters<Browser['newContext']>[0], name: string, steps: (page: Page) => Promise<void>) => {
     const ctx = await browser.newContext({ locale: 'es-AR', timezoneId: 'America/Argentina/Buenos_Aires', ...options });
     const page = await ctx.newPage();
@@ -87,6 +87,9 @@ test('mesa de redacción', async ({ browser }) => {
     await page.screenshot({ path: `${OUT}/${name}-ingreso.png` });
     await page.getByLabel('Email').fill(EDITOR.email);
     await page.getByLabel('Contraseña').fill(EDITOR.password);
+    await page.getByRole('button', { name: 'Entrar' }).click();
+    await page.getByLabel('Código de 6 dígitos').fill(TOTP_CODE);
+    await page.screenshot({ path: `${OUT}/${name}-codigo.png` });
     await page.getByRole('button', { name: 'Entrar' }).click();
     await page.getByRole('heading', { name: 'Notas' }).waitFor();
     await steps(page);
@@ -112,4 +115,16 @@ test('mesa de redacción', async ({ browser }) => {
     await page.getByLabel('Título', { exact: true }).waitFor();
     await page.screenshot({ path: `${OUT}/16-mesa-movil-nota.png`, fullPage: true });
   });
+
+  const ctx = await browser.newContext({ locale: 'es-AR', timezoneId: 'America/Argentina/Buenos_Aires', ...devices['Pixel 7'] });
+  const page = await ctx.newPage();
+  await new FakeSupabase().install(page);
+  await page.goto('/redaccion');
+  await page.getByLabel('Email').fill(NEW_EDITOR.email);
+  await page.getByLabel('Contraseña').fill(NEW_EDITOR.password);
+  await page.getByRole('button', { name: 'Entrar' }).click();
+  await page.getByRole('button', { name: 'Configurar la app' }).click();
+  await page.getByRole('img', { name: /Código QR/ }).waitFor();
+  await page.screenshot({ path: `${OUT}/17-mesa-alta-app.png`, fullPage: true });
+  await ctx.close();
 });
