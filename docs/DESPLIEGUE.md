@@ -40,9 +40,10 @@ Un repositorio privado tiene 2.000 minutos gratis de GitHub Actions por mes (uno
 | 15 publicaciones por día × 2 min | 900 |
 | Armado diario de medianoche | 60 |
 | Pipeline cada 2 horas (cuando corra en GitHub) × 2 min | 720 |
-| **Total** | **1.680 de 2.000** |
+| Copia de seguridad diaria de la base × 3 min | 90 |
+| **Total** | **1.770 de 2.000** |
 
-Con el pipeline cada 2 horas, el máximo seguro es de unas 20 publicaciones por día. El tope está en la variable del repositorio `CONTRASTE_MAX_PUBLICACIONES_DIARIAS` (15 si no se define). Al llegar al tope, las aprobaciones siguientes no arman el sitio y salen en el armado de medianoche: no se pierde nada y los minutos no se agotan antes de fin de mes.
+Con el pipeline cada 2 horas y la copia diaria, el máximo seguro es de unas 18 publicaciones por día. El tope está en la variable del repositorio `CONTRASTE_MAX_PUBLICACIONES_DIARIAS` (15 si no se define). Al llegar al tope, las aprobaciones siguientes no arman el sitio y salen en el armado de medianoche: no se pierde nada y los minutos no se agotan antes de fin de mes.
 
 ### Configurarla (una vez)
 
