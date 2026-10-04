@@ -133,9 +133,23 @@ describe('redactor de Gemini', () => {
     expect(draft.writer).toBe('gemini:modelo-b');
   });
 
+  it('si un borrador se queda sin tiempo, no prueba más modelos y queda para la próxima corrida', async () => {
+    const { client, calls } = fakeClient([busy(), busy()]);
+    const ticks = [0, 0, 100_000, 100_000, 160_000];
+    const error = await writerWith(client, { clock: () => ticks.shift() ?? 160_000, maxWriteMs: 150_000 })
+      .writer.write(await brief())
+      .catch((e) => e);
+
+    // Con 7 modelos saturados y dos vueltas, un solo borrador podría tardar varios minutos.
+    expect(calls.map((c) => c.model)).toEqual(['modelo-a', 'modelo-b']);
+    expect(error).toBeInstanceOf(WriterError);
+    expect(error.retryable).toBe(true);
+    expect(error.message).toMatch(/sin tiempo/);
+  });
+
   it('anota en el registro cada intento, con su resultado y lo que tardó', async () => {
     const { client } = fakeClient([busy(), { text: JSON.stringify(validDraft) }]);
-    const ticks = [0, 28_400, 28_400, 37_600];
+    const ticks = [0, 0, 28_400, 28_400, 37_600];
     const lines: string[] = [];
     await writerWith(client, { clock: () => ticks.shift()!, log: (m) => lines.push(m) }).writer.write(await brief());
 

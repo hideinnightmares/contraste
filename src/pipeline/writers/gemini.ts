@@ -30,7 +30,20 @@ import { draftJsonSchema, draftSchema } from './draft-schema';
  *   restricción no aplica.
  */
 
-export const DEFAULT_GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+/**
+ * En el plan gratis, cada modelo tiene su propio cupo: 20 pedidos por día cada Flash y 500 cada
+ * Flash Lite (AI Studio, octubre de 2026). Cinco Flash suman 100 borradores buenos por día, y más
+ * chances de que alguno no esté saturado. Todos probados con este redactor.
+ */
+export const DEFAULT_GEMINI_MODELS = [
+  'gemini-3.8-flash',
+  'gemini-3.7-flash',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
+  'gemini-3-flash-preview',
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+];
 
 /** Pausa antes de la segunda vuelta cuando todos los modelos estaban saturados. */
 const RETRY_DELAY_MS = 20_000;
@@ -40,6 +53,13 @@ const RETRY_DELAY_MS = 20_000;
  * responde tarda menos de 40 s (con razonamiento bajo, 10 s); uno saturado, 20 a 30 s en avisarlo.
  */
 const REQUEST_TIMEOUT_MS = 60_000;
+
+/**
+ * Máximo para probar modelos en un mismo borrador. Con 7 modelos saturados y dos vueltas, uno
+ * solo podría tardar varios minutos; pasado este tiempo no se prueba otro y el hecho queda para
+ * la próxima corrida. El peor caso es este tope más un pedido.
+ */
+const MAX_WRITE_MS = 150_000;
 
 /** Valores de CONTRASTE_GEMINI_RAZONAMIENTO. `automatico`: cada modelo usa el suyo. */
 const THINKING_LEVELS: Record<string, ThinkingLevel | null> = {
@@ -77,6 +97,7 @@ export interface GeminiWriterOptions {
   client?: GeminiClient;
   retryDelayMs?: number;
   requestTimeoutMs?: number;
+  maxWriteMs?: number;
   sleep?: (ms: number) => Promise<void>;
   /** Milisegundos actuales, para medir cada pedido. */
   clock?: () => number;
@@ -96,6 +117,7 @@ export class GeminiArticleWriter implements ArticleWriter {
   private readonly models: string[];
   private readonly retryDelayMs: number;
   private readonly requestTimeoutMs: number;
+  private readonly maxWriteMs: number;
   private readonly thinking: ThinkingLevel | null;
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly clock: () => number;
@@ -118,6 +140,7 @@ export class GeminiArticleWriter implements ArticleWriter {
     this.optOutAgents = process.env.CONTRASTE_GEMINI_PLAN?.trim().toLowerCase() === 'pago' ? [] : [GEMINI_OPT_OUT_AGENT];
     this.retryDelayMs = options.retryDelayMs ?? RETRY_DELAY_MS;
     this.requestTimeoutMs = options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
+    this.maxWriteMs = options.maxWriteMs ?? MAX_WRITE_MS;
     this.thinking = thinkingFromEnv();
     this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
     this.clock = options.clock ?? Date.now;
@@ -128,13 +151,18 @@ export class GeminiArticleWriter implements ArticleWriter {
     const contents = renderBrief(brief);
     const failures = [...this.unavailable].map((model) => `${model}: saturado o sin cupo en esta corrida`);
     let pending = this.models.filter((model) => !this.unavailable.has(model));
+    const writeStarted = this.clock();
 
-    for (let round = 1; round <= 2 && pending.length > 0; round++) {
+    rounds: for (let round = 1; round <= 2 && pending.length > 0; round++) {
       if (round === 2) await this.sleep(this.retryDelayMs);
       const retryLater: string[] = [];
 
       for (const model of pending) {
         const started = this.clock();
+        if (started - writeStarted >= this.maxWriteMs) {
+          failures.push(`sin tiempo: ${Math.round(this.maxWriteMs / 1000)} s por borrador`);
+          break rounds;
+        }
         const attempt = await this.attempt(model, contents);
         const seconds = Math.round((this.clock() - started) / 1000);
         if ('draft' in attempt) {

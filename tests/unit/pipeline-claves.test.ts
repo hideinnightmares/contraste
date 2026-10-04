@@ -33,7 +33,7 @@ describe('clave de Gemini', () => {
     const lines = await checkGemini({ GEMINI_API_KEY: KEY }, fetchImpl);
     expect(lines.every((l) => l.ok)).toBe(true);
     expect(lines[1].text).toBe(
-      'Modelos que puede usar el redactor, en orden: gemini-3.5-flash, gemini-3.5-flash-lite. No disponibles para esta clave (se saltean): gemini-3.8-flash, gemini-3.7-flash.',
+      'Modelos que puede usar el redactor, en orden: gemini-3.5-flash, gemini-3.5-flash-lite. No disponibles para esta clave (se saltean): gemini-3.8-flash, gemini-3.7-flash, gemini-3.6-flash, gemini-3-flash-preview, gemini-3.1-flash-lite.',
     );
     expect(calls[0].url).not.toContain(KEY);
     expect(calls[0].headers.get('x-goog-api-key')).toBe(KEY);
