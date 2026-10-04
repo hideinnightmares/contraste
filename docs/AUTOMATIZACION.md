@@ -27,6 +27,17 @@ npm run pipeline -- --write --save
 
 Además redacta con IA y guarda. Con `SUPABASE_URL` y `SUPABASE_SECRET_KEY` en `.env.pipeline`, guarda las notas y el informe de la corrida en la base de datos (ver [BASE-DE-DATOS.md](BASE-DE-DATOS.md)); sin ellas, en `.data/pipeline/publicadas/` o `.data/pipeline/revision/`. Requiere `GEMINI_API_KEY` en `.env.pipeline` (gratis, ver [Redactor con IA](#redactor-con-ia)). Sin `--save`, los borradores quedan solo en el informe. Con `--detalle` se listan también los hechos de una sola fuente.
 
+```bash
+npm run pipeline -- --verificar
+```
+
+Solo comprueba las claves, sin leer fuentes, redactar ni guardar (`src/pipeline/check.ts`):
+
+- que `GEMINI_API_KEY` esté cargada, que Google la acepte y qué modelos de la cadena puede usar;
+- que `SUPABASE_SECRET_KEY` esté cargada y la base responda: solo cuenta las notas, sin leerlas ni cambiarlas.
+
+Nunca muestra las claves.
+
 Las notas armadas con fuentes de prueba quedan marcadas como demostración (`isDemo`) y **no se guardan en la base** salvo que se agregue `--permitir-demo`. El esquema de las notas rechaza una nota real que cite una fuente de prueba.
 
 **Tope por corrida.** Se redactan como mucho `CONTRASTE_MAX_BORRADORES_POR_CORRIDA` hechos por corrida (4 si no se define). El orden de prioridad es este:
@@ -175,8 +186,9 @@ El flujo **Pipeline de noticias** (`.github/workflows/pipeline.yml`) corre `npm 
 
 1. Secreto `GEMINI_API_KEY`: la clave de Google AI Studio.
 2. Secreto `SUPABASE_SECRET_KEY`: la clave secreta `pipeline` de Supabase (`sb_secret_…`, ver [BASE-DE-DATOS.md](BASE-DE-DATOS.md#el-pipeline)). La dirección de la base sale de `.env.production`.
-3. Probarlo una vez a mano: pestaña Actions > Pipeline de noticias > Run workflow. Revisar la salida y los borradores en la mesa.
-4. Variable `CONTRASTE_PIPELINE_ACTIVO` con el valor `true`. Para pausarlo, cambiarla a `false`.
+3. Comprobar las claves: pestaña Actions > Pipeline de noticias > Run workflow, marcando "Solo comprobar las claves". Dice si cada secreto está cargado y funciona, sin redactar ni guardar nada. Si una clave quedó cargada como variable en vez de secreto, avisa.
+4. Probarlo una vez a mano: lo mismo, sin marcar la opción. Revisar la salida y los borradores en la mesa.
+5. Variable `CONTRASTE_PIPELINE_ACTIVO` con el valor `true`. Para pausarlo, cambiarla a `false`.
 
 Variables opcionales:
 
