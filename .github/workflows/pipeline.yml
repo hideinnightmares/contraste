@@ -4,7 +4,9 @@
 # Cuándo corre:
 # - cada 2 horas, de 8 a 22 de Buenos Aires, solo si la variable del repositorio
 #   CONTRASTE_PIPELINE_ACTIVO vale "true" (así se activa y se pausa sin tocar el código);
-# - a mano, desde la pestaña Actions, aunque la variable no esté (para probarlo).
+# - a mano, desde la pestaña Actions, aunque la variable no esté (para probarlo). Con la opción
+#   "Solo comprobar las claves", dice si los secretos están cargados y funcionan, sin leer fuentes,
+#   redactar ni guardar.
 #
 # Secretos: GEMINI_API_KEY (Google AI Studio) y SUPABASE_SECRET_KEY (la clave secreta de Supabase,
 # sb_secret_…). La dirección de la base y la del sitio salen de .env.production.
@@ -21,6 +23,11 @@ on:
     - cron: '23 11-23/2 * * *' # 08:23 a 20:23 de Buenos Aires, cada 2 horas
     - cron: '23 1 * * *' # 22:23 de Buenos Aires
   workflow_dispatch:
+    inputs:
+      solo_verificar:
+        description: 'Solo comprobar las claves (Gemini y la base), sin redactar ni guardar'
+        type: boolean
+        default: false
 
 # Una corrida a la vez: dos juntas podrían redactar el mismo hecho, porque cada una lee al empezar
 # qué notas ya existen.
@@ -51,11 +58,28 @@ jobs:
       # (no su texto). Cada feed muestra solo sus últimas notas; con la memoria, un hecho que dos
       # medios publican con horas de diferencia se puede contrastar. Ver src/pipeline/memory.ts.
       - name: Recuperar la memoria de la corrida anterior
+        if: ${{ !inputs.solo_verificar }}
         uses: actions/cache/restore@v6
         with:
           path: .cache/pipeline
           key: pipeline-memoria-${{ github.run_id }}
           restore-keys: pipeline-memoria-
+
+      # Solo dice si cada secreto existe (nunca su valor) y avisa si una clave quedó cargada como
+      # variable: las variables no son secretas y su valor se ve en los registros.
+      - name: Ver dónde están cargadas las claves
+        if: ${{ inputs.solo_verificar }}
+        env:
+          SECRETO_GEMINI: ${{ secrets.GEMINI_API_KEY != '' }}
+          SECRETO_SUPABASE: ${{ secrets.SUPABASE_SECRET_KEY != '' }}
+          VARIABLE_GEMINI: ${{ vars.GEMINI_API_KEY != '' }}
+          VARIABLE_SUPABASE: ${{ vars.SUPABASE_SECRET_KEY != '' }}
+        run: |
+          echo "Secreto GEMINI_API_KEY cargado: $SECRETO_GEMINI"
+          echo "Secreto SUPABASE_SECRET_KEY cargado: $SECRETO_SUPABASE"
+          if [ "$VARIABLE_GEMINI" = true ] || [ "$VARIABLE_SUPABASE" = true ]; then
+            echo "::warning::Hay una clave cargada como variable y no como secreto. Borrala de Variables y cargala en Secrets."
+          fi
 
       - name: Correr el pipeline
         env:
@@ -65,10 +89,10 @@ jobs:
           CONTRASTE_REVIEW_MODE: ${{ vars.CONTRASTE_REVIEW_MODE || 'human' }}
           CONTRASTE_GEMINI_PLAN: ${{ vars.CONTRASTE_GEMINI_PLAN }}
           CONTRASTE_MEMORIA: .cache/pipeline/memoria.json
-        run: npm run pipeline -- --write --save
+        run: npm run pipeline -- ${{ inputs.solo_verificar && '--verificar' || '--write --save' }}
 
       - name: Guardar la memoria para la próxima corrida
-        if: always() && hashFiles('.cache/pipeline/memoria.json') != ''
+        if: ${{ always() && !inputs.solo_verificar && hashFiles('.cache/pipeline/memoria.json') != '' }}
         uses: actions/cache/save@v6
         with:
           path: .cache/pipeline

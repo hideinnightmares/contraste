@@ -12,6 +12,8 @@
  *                                    → también guarda en la base las notas armadas con fuentes de
  *                                      prueba (quedan marcadas como demostración)
  *   npm run pipeline -- --detalle    → muestra también los hechos de una sola fuente
+ *   npm run pipeline -- --verificar  → solo comprueba las claves (Gemini y la base), sin leer
+ *                                      fuentes, redactar ni guardar (ver check.ts)
  *
  * Con CONTRASTE_MEMORIA (la ruta de un archivo, por ejemplo .cache/pipeline/memoria.json) recuerda
  * entre corridas los ítems de las últimas 24 horas, sin el texto de las notas (ver memory.ts).
@@ -35,6 +37,7 @@ import { WebArticleFetcher } from './sources/article';
 import { SupabaseStore, supabaseFromEnv } from './storage/supabase';
 import { withoutFeedText } from './report';
 import { itemsToRemember, loadMemory, saveMemory } from './memory';
+import { checkConfig } from './check';
 import type { ClusterOutcome } from './types';
 import { demoSources, realSources } from '@/config/sources';
 import { editorial } from '@/config/editorial';
@@ -89,7 +92,20 @@ function printOutcome(o: ClusterOutcome) {
   if (o.savedAs) console.log(`  Guardado: ${o.savedAs}`);
 }
 
+async function verifyConfig() {
+  console.log('Contraste · comprobación de las claves del pipeline (no lee fuentes, no redacta ni guarda)\n');
+  const lines = await checkConfig(process.env);
+  for (const line of lines) console.log(`${line.ok ? '✓' : '✗'} ${line.text}`);
+  if (lines.some((line) => !line.ok)) {
+    console.error('\nHay claves para revisar.');
+    process.exitCode = 1;
+  } else {
+    console.log('\nTodo listo: el pipeline puede redactar y guardar.');
+  }
+}
+
 async function main() {
+  if (args.has('--verificar')) return verifyConfig();
   const maxDrafts = maxDraftsFromEnv();
   const writer = write ? createWriter() : null;
   const db = save ? supabaseFromEnv() : null;
