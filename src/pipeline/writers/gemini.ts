@@ -1,4 +1,4 @@
-import { ApiError, GoogleGenAI } from '@google/genai';
+import { ApiError, GoogleGenAI, ThinkingLevel } from '@google/genai';
 import type { DraftArticle, ResearchBrief } from '../types';
 import { WRITER_SYSTEM_PROMPT, WriterError, renderBrief, type ArticleWriter } from './writer';
 import { draftJsonSchema, draftSchema } from './draft-schema';
@@ -10,9 +10,15 @@ import { draftJsonSchema, draftSchema } from './draft-schema';
  *   Flash se saturan seguido (HTTP 503): si uno no responde, pasa al siguiente.
  *   Los Flash Lite van al final porque escriben peor pero casi siempre responden.
  *   Lista configurable con CONTRASTE_GEMINI_MODELS.
+ * - Un modelo saturado tarda 20 a 30 segundos en rechazar el pedido. El que falla por
+ *   algo temporal no se vuelve a probar en los borradores siguientes de la misma
+ *   corrida (cada corrida crea su redactor), y ningún pedido espera más de
+ *   REQUEST_TIMEOUT_MS. Así la corrida no se alarga ni gasta minutos de GitHub.
  * - Si todos fallan por algo temporal, espera y da una segunda vuelta solo con
  *   esos modelos. Si vuelve a fallar, el error es reintentable: el pipeline deja
  *   el hecho en espera para la próxima corrida.
+ * - Razonamiento bajo por defecto (CONTRASTE_GEMINI_RAZONAMIENTO): con un dossier real,
+ *   el borrador sale en un cuarto del tiempo y con el mismo control de nombres y cifras.
  * - Pide la respuesta en JSON con el esquema del borrador y la valida con Zod:
  *   un borrador mal formado no avanza.
  * - Requiere GEMINI_API_KEY (en .env.pipeline, nunca en .env.local).
@@ -29,6 +35,31 @@ export const DEFAULT_GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'g
 /** Pausa antes de la segunda vuelta cuando todos los modelos estaban saturados. */
 const RETRY_DELAY_MS = 20_000;
 
+/**
+ * Máximo que se espera un pedido. Medido con un dossier real de 9 fuentes: un modelo que
+ * responde tarda menos de 40 s (con razonamiento bajo, 10 s); uno saturado, 20 a 30 s en avisarlo.
+ */
+const REQUEST_TIMEOUT_MS = 60_000;
+
+/** Valores de CONTRASTE_GEMINI_RAZONAMIENTO. `automatico`: cada modelo usa el suyo. */
+const THINKING_LEVELS: Record<string, ThinkingLevel | null> = {
+  minimo: ThinkingLevel.MINIMAL,
+  bajo: ThinkingLevel.LOW,
+  medio: ThinkingLevel.MEDIUM,
+  alto: ThinkingLevel.HIGH,
+  automatico: null,
+};
+
+function thinkingFromEnv(): ThinkingLevel | null {
+  const raw = process.env.CONTRASTE_GEMINI_RAZONAMIENTO?.trim();
+  if (!raw) return ThinkingLevel.LOW;
+  const key = raw.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  if (!(key in THINKING_LEVELS)) {
+    throw new WriterError(`CONTRASTE_GEMINI_RAZONAMIENTO="${raw}" no existe. Opciones: ${Object.keys(THINKING_LEVELS).join(', ')}.`, false);
+  }
+  return THINKING_LEVELS[key];
+}
+
 /** Lo único que el redactor usa del cliente; permite probarlo sin red. */
 export interface GeminiClient {
   models: {
@@ -40,12 +71,17 @@ export interface GeminiClient {
   };
 }
 
-interface GeminiWriterOptions {
+export interface GeminiWriterOptions {
   apiKey?: string;
   models?: string[];
   client?: GeminiClient;
   retryDelayMs?: number;
+  requestTimeoutMs?: number;
   sleep?: (ms: number) => Promise<void>;
+  /** Milisegundos actuales, para medir cada pedido. */
+  clock?: () => number;
+  /** Una línea por intento: modelo, resultado y lo que tardó. */
+  log?: (message: string) => void;
 }
 
 type Attempt = { draft: DraftArticle } | { failure: string; transient: boolean };
@@ -59,7 +95,15 @@ export class GeminiArticleWriter implements ArticleWriter {
   private readonly client: GeminiClient;
   private readonly models: string[];
   private readonly retryDelayMs: number;
+  private readonly requestTimeoutMs: number;
+  private readonly thinking: ThinkingLevel | null;
   private readonly sleep: (ms: number) => Promise<void>;
+  private readonly clock: () => number;
+  private readonly log: (message: string) => void;
+  /** Modelos que fallaron por algo temporal en esta corrida: no se prueban en los borradores siguientes. */
+  private readonly unavailable = new Set<string>();
+  /** Modelos que no aceptan el nivel de razonamiento: se les pide sin él. */
+  private readonly withoutThinking = new Set<string>();
 
   constructor(options: GeminiWriterOptions = {}) {
     const apiKey = options.apiKey ?? process.env.GEMINI_API_KEY;
@@ -73,23 +117,37 @@ export class GeminiArticleWriter implements ArticleWriter {
     this.models = options.models ?? (fromEnv?.length ? fromEnv : DEFAULT_GEMINI_MODELS);
     this.optOutAgents = process.env.CONTRASTE_GEMINI_PLAN?.trim().toLowerCase() === 'pago' ? [] : [GEMINI_OPT_OUT_AGENT];
     this.retryDelayMs = options.retryDelayMs ?? RETRY_DELAY_MS;
+    this.requestTimeoutMs = options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
+    this.thinking = thinkingFromEnv();
     this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    this.clock = options.clock ?? Date.now;
+    this.log = options.log ?? (() => {});
   }
 
   async write(brief: ResearchBrief): Promise<DraftArticle> {
     const contents = renderBrief(brief);
-    const failures: string[] = [];
-    let pending = this.models;
+    const failures = [...this.unavailable].map((model) => `${model}: saturado o sin cupo en esta corrida`);
+    let pending = this.models.filter((model) => !this.unavailable.has(model));
 
     for (let round = 1; round <= 2 && pending.length > 0; round++) {
       if (round === 2) await this.sleep(this.retryDelayMs);
       const retryLater: string[] = [];
 
       for (const model of pending) {
+        const started = this.clock();
         const attempt = await this.attempt(model, contents);
-        if ('draft' in attempt) return attempt.draft;
+        const seconds = Math.round((this.clock() - started) / 1000);
+        if ('draft' in attempt) {
+          this.unavailable.delete(model);
+          this.log(`${model}: borrador listo (${seconds} s)`);
+          return attempt.draft;
+        }
+        this.log(`${model}: ${attempt.failure} (${seconds} s)`);
         failures.push(`${model}: ${attempt.failure}`);
-        if (attempt.transient) retryLater.push(model);
+        if (attempt.transient) {
+          retryLater.push(model);
+          this.unavailable.add(model);
+        }
       }
       pending = retryLater;
     }
@@ -100,6 +158,7 @@ export class GeminiArticleWriter implements ArticleWriter {
   /** Un pedido a un modelo. Lanza solo los errores que no tiene sentido reintentar con otro modelo. */
   private async attempt(model: string, contents: string): Promise<Attempt> {
     let response;
+    const thinking = this.withoutThinking.has(model) ? null : this.thinking;
     try {
       response = await this.client.models.generateContent({
         model,
@@ -108,11 +167,17 @@ export class GeminiArticleWriter implements ArticleWriter {
           systemInstruction: WRITER_SYSTEM_PROMPT,
           responseMimeType: 'application/json',
           responseJsonSchema: draftJsonSchema(),
+          abortSignal: AbortSignal.timeout(this.requestTimeoutMs),
+          ...(thinking ? { thinkingConfig: { thinkingLevel: thinking } } : {}),
         },
       });
     } catch (error) {
       if (!(error instanceof ApiError)) {
-        // Red caída, tiempo agotado: puede andar en un rato.
+        const name = (error as Error).name;
+        if (name === 'TimeoutError' || name === 'AbortError') {
+          return { failure: `sin respuesta en ${Math.round(this.requestTimeoutMs / 1000)} s`, transient: true };
+        }
+        // Red caída: puede andar en un rato.
         return { failure: (error as Error).message, transient: true };
       }
       if (error.status === 429) return { failure: 'sin cupo', transient: true };
@@ -120,6 +185,11 @@ export class GeminiArticleWriter implements ArticleWriter {
       if (error.status === 404) return { failure: 'modelo no disponible para esta clave', transient: false };
       if (error.status === 400 && /api key/i.test(error.message)) {
         throw new WriterError('La clave GEMINI_API_KEY no es válida. Revisala en Google AI Studio.', false, error);
+      }
+      if (error.status === 400 && thinking && /thinking/i.test(error.message)) {
+        // Un modelo que no acepta el nivel de razonamiento: se le pide sin él.
+        this.withoutThinking.add(model);
+        return this.attempt(model, contents);
       }
       if (error.status === 401 || error.status === 403) {
         throw new WriterError('Google rechazó la clave GEMINI_API_KEY (sin permiso para este modelo o región).', false, error);

@@ -12,10 +12,13 @@
 # sb_secret_…). La dirección de la base y la del sitio salen de .env.production.
 #
 # Variables opcionales: CONTRASTE_MAX_BORRADORES_POR_CORRIDA (4 si no se define),
-# CONTRASTE_REVIEW_MODE ("human" si no se define: todo pasa por la mesa) y CONTRASTE_GEMINI_PLAN
-# ("pago" cuando se contrate el plan pago de Gemini).
+# CONTRASTE_MINUTOS_POR_CORRIDA (4: pasado ese tiempo no se empieza otro borrador),
+# CONTRASTE_REVIEW_MODE ("human" si no se define: todo pasa por la mesa), CONTRASTE_GEMINI_PLAN
+# ("pago" cuando se contrate el plan pago de Gemini) y CONTRASTE_GEMINI_RAZONAMIENTO ("bajo" si no
+# se define; ver docs/AUTOMATIZACION.md).
 #
-# Cupo: unos 3 minutos facturados por corrida, 8 corridas por día (ver docs/DESPLIEGUE.md).
+# Cupo: unos 3 minutos facturados por corrida, 8 corridas por día (ver docs/DESPLIEGUE.md). El
+# trabajo se corta a los 10 minutos aunque algo se cuelgue.
 name: Pipeline de noticias
 
 on:
@@ -42,7 +45,7 @@ jobs:
   pipeline:
     if: github.event_name == 'workflow_dispatch' || vars.CONTRASTE_PIPELINE_ACTIVO == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
 
@@ -86,8 +89,10 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           CONTRASTE_MAX_BORRADORES_POR_CORRIDA: ${{ vars.CONTRASTE_MAX_BORRADORES_POR_CORRIDA || 4 }}
+          CONTRASTE_MINUTOS_POR_CORRIDA: ${{ vars.CONTRASTE_MINUTOS_POR_CORRIDA || 4 }}
           CONTRASTE_REVIEW_MODE: ${{ vars.CONTRASTE_REVIEW_MODE || 'human' }}
           CONTRASTE_GEMINI_PLAN: ${{ vars.CONTRASTE_GEMINI_PLAN }}
+          CONTRASTE_GEMINI_RAZONAMIENTO: ${{ vars.CONTRASTE_GEMINI_RAZONAMIENTO }}
           CONTRASTE_MEMORIA: .cache/pipeline/memoria.json
         run: npm run pipeline -- ${{ inputs.solo_verificar && '--verificar' || '--write --save' }}
 

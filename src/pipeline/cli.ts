@@ -60,6 +60,11 @@ const detail = demo || args.has('--detalle');
 const memoryFile = demo ? null : process.env.CONTRASTE_MEMORIA?.trim() || null;
 
 const DEFAULT_MAX_DRAFTS = 4;
+/**
+ * Minutos después de los cuales no se empieza otro borrador. Una corrida normal tarda 2 o 3; el
+ * tope acota los minutos de GitHub Actions cuando Gemini anda lento (ver docs/DESPLIEGUE.md).
+ */
+const DEFAULT_MAX_RUN_MINUTES = 4;
 
 const label = {
   auto_publish: 'PUBLICACIÓN AUTOMÁTICA',
@@ -75,6 +80,16 @@ function maxDraftsFromEnv(): number {
   const value = Number(raw);
   if (!Number.isInteger(value) || value < 0) {
     throw new Error(`CONTRASTE_MAX_BORRADORES_POR_CORRIDA tiene que ser un número entero (0 o más), no "${raw}".`);
+  }
+  return value;
+}
+
+function maxRunMinutesFromEnv(): number {
+  const raw = process.env.CONTRASTE_MINUTOS_POR_CORRIDA?.trim();
+  if (!raw) return DEFAULT_MAX_RUN_MINUTES;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`CONTRASTE_MINUTOS_POR_CORRIDA tiene que ser un número entero de minutos (1 o más), no "${raw}".`);
   }
   return value;
 }
@@ -107,12 +122,13 @@ async function verifyConfig() {
 async function main() {
   if (args.has('--verificar')) return verifyConfig();
   const maxDrafts = maxDraftsFromEnv();
-  const writer = write ? createWriter() : null;
+  const maxRunMinutes = maxRunMinutesFromEnv();
+  const writer = write ? createWriter({ log: (m) => console.log(`  · ${m}`) }) : null;
   const db = save ? supabaseFromEnv() : null;
   const store = db ? new SupabaseStore(db) : null;
   const destination = !save ? 'no guarda' : store ? 'base de datos' : 'archivos locales';
   console.log(
-    `Contraste · pipeline (fuentes: ${demo ? 'de prueba' : 'reales'}, revisión: ${editorial.review.mode}, redactor: ${writer ? writer.name : 'ninguno'}, máximo por corrida: ${maxDrafts}, destino: ${destination})\n`,
+    `Contraste · pipeline (fuentes: ${demo ? 'de prueba' : 'reales'}, revisión: ${editorial.review.mode}, redactor: ${writer ? writer.name : 'ninguno'}, máximo por corrida: ${maxDrafts} borradores en ${maxRunMinutes} min, destino: ${destination})\n`,
   );
 
   let publisher: Publisher | null = null;
@@ -141,6 +157,7 @@ async function main() {
     fetcher,
     publisher,
     maxDrafts,
+    maxRunMinutes,
     takenSlugs: store ? await store.existingSlugs() : undefined,
     coveredSourceUrls: store ? await store.coveredSourceUrls() : undefined,
     log: (m) => console.log(`  · ${m}`),

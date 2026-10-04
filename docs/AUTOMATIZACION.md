@@ -126,6 +126,9 @@ Lo común a los dos:
 
 - Clave en [Google AI Studio](https://aistudio.google.com/apikey), guardada como `GEMINI_API_KEY` en `.env.pipeline`. Ese archivo lo lee solo el pipeline: en `.env.local` terminaría dentro del código que se publica en Cloudflare (ver [docs/DESPLIEGUE.md](DESPLIEGUE.md)). El plan gratuito no pide tarjeta y está disponible en Argentina.
 - Cadena de modelos (`CONTRASTE_GEMINI_MODELS`): `gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.5-flash` y, al final, `gemini-3.5-flash-lite`. El cupo gratuito es por modelo y los Flash se saturan seguido (error 503): si uno no responde, pasa al siguiente. Si todos fallan por algo temporal, espera 20 segundos y da una segunda vuelta.
+- Un modelo saturado tarda 20 a 30 segundos en rechazar el pedido. Por eso, el que falla por algo temporal no se vuelve a probar en el resto de la corrida, y ningún pedido espera más de 60 segundos. Antes de este cambio, cada borrador repetía esos intentos y la primera corrida real tardó 10 minutos.
+- **Razonamiento** (`CONTRASTE_GEMINI_RAZONAMIENTO`): `bajo` por defecto; también `minimo`, `medio`, `alto` o `automatico` (cada modelo usa el suyo). Medido el 3 de octubre de 2026 con un dossier real de 9 fuentes: `gemini-3.5-flash` tardó 35 segundos con su razonamiento por defecto y 9 con razonamiento bajo, y los dos borradores pasaron igual el control de nombres y cifras. A un modelo que no acepta el nivel se le pide sin él.
+- El registro de cada corrida muestra cada pedido, con el modelo, el resultado y lo que tardó (por ejemplo, `gemini-3.8-flash: saturado (28 s)`).
 - Los Flash Lite escriben peor (más repeticiones, más errores de criterio) pero casi siempre responden. Sus borradores pasan por los mismos controles.
 - Google retira modelos: `gemini-2.5-flash`, por ejemplo, ya no se ofrece a cuentas nuevas (error 404). Un modelo retirado se salta solo; conviene revisar la lista cada tanto.
 - **Uso de datos:** en el plan gratuito, Google usa lo enviado para mejorar sus productos y puede revisarlo una persona. El dossier contiene solo texto de fuentes públicas; nunca hay que mandarle datos personales, del newsletter ni material sin publicar de terceros. Por eso tampoco lleva el texto completo de los sitios que se lo prohíben a Google (ver [Lectura del texto completo](#lectura-del-texto-completo)). El plan pago de Gemini no usa los datos para entrenar: al contratarlo, definir `CONTRASTE_GEMINI_PLAN=pago`.
@@ -195,8 +198,10 @@ Variables opcionales:
 | Variable | Qué hace | Si no se define |
 | --- | --- | --- |
 | `CONTRASTE_MAX_BORRADORES_POR_CORRIDA` | Máximo de borradores por corrida | 4 |
+| `CONTRASTE_MINUTOS_POR_CORRIDA` | Pasados esos minutos desde el inicio, no se empieza otro borrador: lo que falta queda para la próxima | 4 |
 | `CONTRASTE_REVIEW_MODE` | `policy` publica solo lo que cumple la política | `human`: todo pasa por la mesa |
 | `CONTRASTE_GEMINI_PLAN` | `pago` al contratar el plan pago de Gemini | Plan gratis |
+| `CONTRASTE_GEMINI_RAZONAMIENTO` | Cuánto razona Gemini antes de escribir: `minimo`, `bajo`, `medio`, `alto` o `automatico` | `bajo` |
 
 **Una corrida a la vez:** si una se demora, la siguiente espera. Dos corridas simultáneas podrían redactar el mismo hecho.
 
@@ -210,7 +215,7 @@ Variables opcionales:
 
 Que Gemini se quede sin cupo no es un error: pasa en el plan gratis, y el hecho se redacta en la próxima corrida. Que bloquee el pedido de una nota tampoco, si salieron otros borradores: esa nota queda en la mesa para revisar.
 
-**Cupo de minutos:** unos 3 minutos facturados por corrida (ver [DESPLIEGUE.md](DESPLIEGUE.md#cuánto-se-puede-publicar)).
+**Cupo de minutos:** unos 3 minutos facturados por corrida (ver [DESPLIEGUE.md](DESPLIEGUE.md#cuánto-se-puede-publicar)). Para que una corrida lenta no se coma el cupo, pasados `CONTRASTE_MINUTOS_POR_CORRIDA` (4) no se empieza otro borrador, y el trabajo se corta a los 10 minutos aunque algo se cuelgue. Antes de activar las corridas automáticas, conviene mirar la duración de dos o tres corridas a mano en la pestaña Actions.
 
 ## Distribución
 

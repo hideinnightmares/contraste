@@ -44,6 +44,8 @@ Un repositorio privado tiene 2.000 minutos gratis de GitHub Actions por mes (uno
 | Prueba semanal de las fuentes × 2 min | 10 |
 | **Total** | **1.780 de 2.000** |
 
+El cálculo del pipeline supone corridas de unos 3 minutos. La primera corrida real tardó 10, casi todo esperando a modelos de Gemini saturados: a ese ritmo, el pipeline solo gastaría unos 2.640 minutos por mes. Desde entonces, un modelo saturado no se reintenta en la misma corrida, Gemini razona menos y cada corrida tiene un tope de tiempo (ver [AUTOMATIZACION.md](AUTOMATIZACION.md#corrida-programada)).
+
 Con el pipeline, la copia diaria y la prueba de las fuentes, el máximo seguro es de unas 18 publicaciones por día. Los minutos del pipeline se gastan solo cuando está activo (variable `CONTRASTE_PIPELINE_ACTIVO`, ver [AUTOMATIZACION.md](AUTOMATIZACION.md#corrida-programada)). El tope está en la variable del repositorio `CONTRASTE_MAX_PUBLICACIONES_DIARIAS` (15 si no se define). Al llegar al tope, las aprobaciones siguientes no arman el sitio y salen en el armado de medianoche: no se pierde nada y los minutos no se agotan antes de fin de mes.
 
 ### Configurarla (una vez)
