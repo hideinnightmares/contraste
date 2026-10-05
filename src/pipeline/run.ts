@@ -14,6 +14,7 @@ import { draftToArticle, type Publisher } from './stages/publish';
 import type { ArticleWriter } from './writers/writer';
 import { WriterError, resolveSourceIds } from './writers/writer';
 import type { ClusterOutcome, PipelineReport, SourceDefinition, SourceItem, StoryCluster, VerificationReport } from './types';
+import type { Log } from './registro';
 
 /** Ventana de recopilación, en horas. */
 export const DEFAULT_SINCE_HOURS = 24;
@@ -48,7 +49,8 @@ export interface PipelineOptions {
    * con alguna de esas URLs ya está cubierto: no se vuelve a redactar (ni a gastar cupo de IA).
    */
   coveredSourceUrls?: Map<string, string>;
-  log?: (message: string) => void;
+  /** Registro de la corrida: los títulos y las direcciones van aparte, en `detail` (registro.ts). */
+  log?: Log;
 }
 
 export function connectorsFor(definitions: SourceDefinition[] = realSources): SourceConnector[] {
@@ -210,7 +212,7 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
     if (options.fetcher) {
       fullTexts = await readFullTexts(cluster, options.fetcher);
       if (fullTexts.size > 0) {
-        log(`texto completo de ${fullTexts.size} de ${cluster.items.filter((i) => !i.discoveryOnly).length} fuentes: ${cluster.headline}`);
+        log(`texto completo de ${fullTexts.size} de ${cluster.items.filter((i) => !i.discoveryOnly).length} fuentes`, cluster.headline);
         verification = verifyCluster(cluster, { fullTexts, outlets });
       }
     }
@@ -267,12 +269,12 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
       try {
         const article = draftToArticle(outcome, brief, now(), takenSlugs);
         outcome.savedAs = await options.publisher.save(article, { writer: outcome.draft?.writer });
-        log(`guardada ${article.slug} → ${outcome.savedAs}`);
+        log(`guardada → ${outcome.savedAs}`, article.slug);
       } catch (err) {
         outcome.stage = 'save_failed';
         outcome.error = (err as Error).message;
         outcome.review = { decision: 'human_review', reasons: [`El borrador se redactó pero no se pudo guardar: ${outcome.error}`] };
-        log(`no se pudo guardar "${outcome.draft?.title}": ${outcome.error}`);
+        log(`no se pudo guardar un borrador: ${outcome.error}`, outcome.draft?.title);
       }
     }
     outcomes.push(outcome);

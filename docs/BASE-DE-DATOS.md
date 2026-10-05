@@ -94,7 +94,17 @@ con `begin;` al principio del archivo y sin `commit`. Requiere `npx supabase log
 
 `.github/workflows/respaldar-base.yml` exporta la base todos los días a las 03:41 de Buenos Aires con `supabase db dump`, como recomienda Supabase, y guarda la copia en GitHub durante 30 días: pestaña *Actions* > "Respaldar la base de datos" > una corrida > *Artifacts*. Usa el secreto `SUPABASE_DB_URL`, el mismo de las migraciones. También se puede correr a mano desde esa pestaña (*Run workflow*).
 
-Cada copia tiene tres archivos:
+**La copia está cifrada.** El repositorio es público y cualquier usuario de GitHub puede bajar los archivos de una corrida, así que la copia sube como un solo archivo, `respaldo.tar.gz.gpg`, cifrado con AES-256 y la clave del secreto `RESPALDO_CLAVE`. Sin la clave no se puede leer. Si el secreto falta, el flujo falla en vez de subir la copia sin cifrar, y en cada corrida comprueba que la copia se puede descifrar.
+
+**La clave tiene que estar también fuera de GitHub**, porque GitHub no deja volver a leer un secreto: está en `.env.pipeline` como `RESPALDO_CLAVE`, y conviene guardarla además en un gestor de contraseñas. Si se pierde, las copias guardadas no se pueden abrir: hay que crear una clave nueva, cargarla como secreto y esperar la copia siguiente.
+
+**Descifrar** (en Windows, desde Git Bash, que ya trae `gpg`): bajar el artifact de la corrida, descomprimir el `.zip` y, en esa carpeta,
+
+```bash
+gpg --decrypt respaldo.tar.gz.gpg > respaldo.tar.gz
+```
+
+`gpg` pide la clave. Después, `tar -xzf respaldo.tar.gz` deja la carpeta `respaldo/` con tres archivos:
 
 | Archivo | Qué tiene |
 | --- | --- |
