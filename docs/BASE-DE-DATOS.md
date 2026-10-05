@@ -20,7 +20,7 @@ Todas las tablas tienen RLS. El proyecto se creó con "Automatically expose new 
 | Rol | Puede |
 | --- | --- |
 | Visitante (`anon`) o usuario logueado | Leer notas publicadas con fecha ya cumplida. Lo usa el armado del sitio |
-| Editor (está en `editors`), con la verificación en dos pasos | Leer y editar todas las notas; ver historial e informes del pipeline. Con la contraseña sola (sin el código de la app), nada |
+| Editor (está en `editors`), con la verificación en dos pasos | Leer y editar todas las notas; ver historial e informes del pipeline. Con la contraseña sola (sin el código de la app), nada, salvo que esté eximido (`editors.sin_dos_pasos`, ver [MESA-DE-REDACCION.md](MESA-DE-REDACCION.md#verificación-en-dos-pasos)) |
 | Pipeline (`service_role`, clave secreta) | Crear y actualizar notas e informes |
 | Nadie por la API | Borrar notas, escribir el historial, agregar editores |
 

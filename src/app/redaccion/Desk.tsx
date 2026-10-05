@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { assuranceLevel, isEditor, onSessionChange, signOut, verifiedFactorId } from './api';
+import { assuranceLevel, editorAccess, onSessionChange, signOut, verifiedFactorId } from './api';
 import { LoginForm } from './LoginForm';
 import { SecondFactor } from './SecondFactor';
 import { DraftList, type ListTab } from './DraftList';
@@ -25,7 +25,10 @@ type Gate =
 async function gateFor(session: Session | null): Promise<Gate> {
   if (!session) return { kind: 'signed-out' };
   const email = session.user.email ?? '';
-  if (!(await isEditor(session.user.id))) return { kind: 'not-editor', email };
+  const access = await editorAccess(session.user.id);
+  if (!access.editor) return { kind: 'not-editor', email };
+  // Excepción explícita para ese editor: la base lo deja entrar con la contraseña sola.
+  if (access.withoutSecondFactor) return { kind: 'editor', userId: session.user.id, email };
   const level = await assuranceLevel();
   if (level.current === 'aal2') return { kind: 'editor', userId: session.user.id, email };
   return { kind: 'second-factor', email, factorId: level.next === 'aal2' ? await verifiedFactorId() : null };
