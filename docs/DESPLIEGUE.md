@@ -33,6 +33,8 @@ Corre un armado a la vez. Si llegan varias aprobaciones mientras uno corre, qued
 
 ### Cuánto se puede publicar
 
+**El repositorio es público desde octubre de 2026, y los repositorios públicos no tienen límite de minutos de GitHub Actions.** La cuenta de abajo queda como referencia por si alguna vez vuelve a ser privado. Al hacerlo público, las copias de la base pasaron a subir cifradas y el registro del pipeline dejó de mostrar títulos (ver [BASE-DE-DATOS.md](BASE-DE-DATOS.md#copias-de-seguridad) y [AUTOMATIZACION.md](AUTOMATIZACION.md#corrida-programada)).
+
 Un repositorio privado tiene 2.000 minutos gratis de GitHub Actions por mes (uno público, ilimitados). GitHub cobra cada ejecución por minuto entero hacia arriba. En esta computadora el armado tarda 11 segundos y la subida 18; en GitHub, con la instalación de dependencias, se estima en unos 2 minutos facturados (confirmarlo con los primeros armados en la pestaña Actions).
 
 | Uso | Minutos por mes |

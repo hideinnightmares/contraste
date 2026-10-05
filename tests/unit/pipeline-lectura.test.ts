@@ -161,6 +161,16 @@ describe('lector de notas', () => {
     expect(calls.every((c) => c.userAgent === userAgent() && c.userAgent.startsWith('ContrasteBot/'))).toBe(true);
   });
 
+  it('al saltear una nota, deja la dirección aparte del mensaje, para que el registro público la oculte', async () => {
+    const lines: [string, string | undefined][] = [];
+    const fetcher = new WebArticleFetcher({
+      fetchImpl: (async () => new Response('User-agent: *\nDisallow: /\n')) as typeof fetch,
+      log: (message, detail) => lines.push([message, detail]),
+    });
+    expect(await fetcher.fetchText('https://andino.test/nota')).toBeNull();
+    expect(lines).toEqual([['texto completo no leído (su robots.txt no lo permite)', 'https://andino.test/nota']]);
+  });
+
   it('respeta robots.txt, los errores del sitio y los muros de pago', async () => {
     const paid = `<script type="application/ld+json">{"@type":"NewsArticle","isAccessibleForFree":false,"articleBody":"${longText}"}</script>`;
     const { fetcher, calls } = setup({

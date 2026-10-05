@@ -25,6 +25,8 @@
  * la marca noai; ver sources/article.ts). Las fuentes de prueba no se leen.
  *
  * Imprime un informe y lo guarda en .data/pipeline/informes/ (sin el texto de las notas ajenas).
+ * Con CONTRASTE_REGISTRO=resumen (lo usa GitHub Actions, donde el registro es público) imprime
+ * solo cantidades y errores, sin títulos ni direcciones (ver registro.ts).
  */
 import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -39,6 +41,7 @@ import { withoutFeedText } from './report';
 import { itemsToRemember, loadMemory, saveMemory } from './memory';
 import { checkConfig } from './check';
 import type { ClusterOutcome } from './types';
+import { logLine, summaryFromEnv, summaryLines, type Log } from './registro';
 import { demoSources, realSources } from '@/config/sources';
 import { editorial } from '@/config/editorial';
 
@@ -56,6 +59,8 @@ const save = args.has('--save');
 const allowDemo = args.has('--permitir-demo');
 const demo = args.has('--prueba');
 const detail = demo || args.has('--detalle');
+const summaryOnly = summaryFromEnv();
+const line: Log = (message, extra) => console.log(`  · ${logLine(message, extra, summaryOnly)}`);
 // Las fuentes de prueba no se recuerdan: son ficticias y no cambian.
 const memoryFile = demo ? null : process.env.CONTRASTE_MEMORIA?.trim() || null;
 
@@ -123,7 +128,7 @@ async function main() {
   if (args.has('--verificar')) return verifyConfig();
   const maxDrafts = maxDraftsFromEnv();
   const maxRunMinutes = maxRunMinutesFromEnv();
-  const writer = write ? createWriter({ log: (m) => console.log(`  · ${m}`) }) : null;
+  const writer = write ? createWriter({ log: line }) : null;
   const db = save ? supabaseFromEnv() : null;
   const store = db ? new SupabaseStore(db) : null;
   const destination = !save ? 'no guarda' : store ? 'base de datos' : 'archivos locales';
@@ -144,7 +149,7 @@ async function main() {
 
   // Lee el texto completo de las notas reales (las fuentes de prueba no se leen). Si el proveedor
   // del redactor entrena con lo que recibe, también respeta lo que cada sitio le prohíbe a él.
-  const fetcher = new WebArticleFetcher({ alsoRespect: writer?.optOutAgents ?? [], log: (m) => console.log(`  · ${m}`) });
+  const fetcher = new WebArticleFetcher({ alsoRespect: writer?.optOutAgents ?? [], log: line });
 
   const memory = memoryFile ? await loadMemory(memoryFile) : null;
   if (memory?.warning) console.log(`  ! ${memory.warning}`);
@@ -160,7 +165,7 @@ async function main() {
     maxRunMinutes,
     takenSlugs: store ? await store.existingSlugs() : undefined,
     coveredSourceUrls: store ? await store.coveredSourceUrls() : undefined,
-    log: (m) => console.log(`  · ${m}`),
+    log: line,
   });
 
   console.log(`\n${report.collected} ítems recopilados, ${report.clusters} hechos detectados.`);
@@ -168,14 +173,20 @@ async function main() {
 
   // Con las fuentes reales hay cientos de hechos de una sola fuente: se cuentan, no se listan.
   const singleSource = (o: ClusterOutcome) => o.stage === 'verified' && o.verification.status === 'unverified';
-  for (const o of report.outcomes) {
-    if (o.stage === 'deferred' || o.stage === 'already_covered' || (singleSource(o) && !detail)) continue;
-    printOutcome(o);
-  }
-  const deferred = report.outcomes.filter((o) => o.stage === 'deferred');
-  if (deferred.length > 0) {
-    console.log(`\nQuedan para una próxima corrida (${deferred.length}):`);
-    for (const o of deferred) console.log(`  · ${o.cluster.headline} (${o.verification.independentSources} fuentes independientes)`);
+  if (summaryOnly) {
+    console.log('');
+    for (const l of summaryLines(report)) console.log(l);
+    console.log('El detalle de cada hecho está en el informe de la corrida, en la base: lo ve solo la redacción.');
+  } else {
+    for (const o of report.outcomes) {
+      if (o.stage === 'deferred' || o.stage === 'already_covered' || (singleSource(o) && !detail)) continue;
+      printOutcome(o);
+    }
+    const deferred = report.outcomes.filter((o) => o.stage === 'deferred');
+    if (deferred.length > 0) {
+      console.log(`\nQuedan para una próxima corrida (${deferred.length}):`);
+      for (const o of deferred) console.log(`  · ${o.cluster.headline} (${o.verification.independentSources} fuentes independientes)`);
+    }
   }
   const covered = report.outcomes.filter((o) => o.stage === 'already_covered').length;
   const waiting = report.outcomes.filter(singleSource).length;

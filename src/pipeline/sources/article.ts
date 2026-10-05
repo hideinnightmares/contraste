@@ -1,3 +1,4 @@
+import type { Log } from '../registro';
 import type { ArticleFetcher } from '../stages/research';
 import { stripHtml } from './connector';
 import { BOT_TOKEN, userAgent } from './http';
@@ -137,7 +138,8 @@ interface FetcherOptions {
   maxChars?: number;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
-  log?: (message: string) => void;
+  /** La dirección de la nota salteada va aparte, en `detail` (ver registro.ts). */
+  log?: Log;
   /**
    * Otros robots cuyas prohibiciones también se respetan: los del proveedor de IA del redactor,
    * si usa lo que recibe para entrenar (por ejemplo, `Google-Extended` con Gemini gratis). Ver
@@ -157,7 +159,7 @@ export class WebArticleFetcher implements ArticleFetcher {
   private readonly maxChars: number;
   private readonly now: () => number;
   private readonly sleep: (ms: number) => Promise<void>;
-  private readonly log: (message: string) => void;
+  private readonly log: Log;
   private readonly alsoRespect: string[];
   private readonly robots = new Map<string, Promise<RobotsVerdict>>();
   private readonly nextSlot = new Map<string, number>();
@@ -223,7 +225,7 @@ export class WebArticleFetcher implements ArticleFetcher {
 
   private skip(url: string, reason: SkipReason): null {
     this.skipped.push({ url, reason });
-    this.log(`texto completo no leído (${SKIP_LABEL[reason]}): ${url}`);
+    this.log(`texto completo no leído (${SKIP_LABEL[reason]})`, url);
     return null;
   }
 

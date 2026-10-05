@@ -37,6 +37,20 @@ Para entrar a la mesa hacen falta la contraseña y un código de 6 dígitos que 
 delete from auth.mfa_factors where user_id = (select id from auth.users where email = 'el-email-del-editor');
 ```
 
+**Editores eximidos.** Un editor puede quedar eximido del segundo paso: entra con la contraseña sola y la mesa no le pide el código (migración `20261005004815_editores_sin_dos_pasos.sql`). Es una excepción explícita, que se decide por cada editor: su cuenta queda protegida solo por la contraseña, así que conviene una larga que no se use en otro sitio. Con esa contraseña, cualquiera podría publicar en nombre del diario. Se marca y se desmarca desde el *SQL Editor*:
+
+```sql
+-- Eximir
+update public.editors set sin_dos_pasos = true
+where user_id = (select id from auth.users where email = 'el-email-del-editor');
+
+-- Volver a pedirle el código
+update public.editors set sin_dos_pasos = false
+where user_id = (select id from auth.users where email = 'el-email-del-editor');
+```
+
+Un editor no puede eximirse a sí mismo: la mesa lee su fila de `editors`, pero la base no le deja cambiarla. Probado contra la base real: sin la marca, con la contraseña sola, no ve ni cambia ninguna nota; con la marca, ve y edita todo; y si intenta sacarse o ponerse la marca, la base lo rechaza.
+
 ## Qué controla la base
 
 La mesa revisa todo antes de guardar para explicar mejor los errores, pero las reglas las hace cumplir la base (migración `20261002182417_mesa_de_redaccion.sql`), así que valen también para el pipeline y para cualquier acceso por la API:

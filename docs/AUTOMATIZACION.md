@@ -204,6 +204,8 @@ Variables opcionales:
 | `CONTRASTE_GEMINI_PLAN` | `pago` al contratar el plan pago de Gemini | Plan gratis |
 | `CONTRASTE_GEMINI_RAZONAMIENTO` | Cuánto razona Gemini antes de escribir: `minimo`, `bajo`, `medio`, `alto` o `automatico` | `bajo` |
 
+**El registro de GitHub es público**, porque el repositorio lo es. Por eso el flujo corre con `CONTRASTE_REGISTRO=resumen`: muestra cuántos ítems leyó cada fuente, cuánto tardó cada pedido a Gemini, cuántos borradores salieron y los errores, pero no los títulos ni las direcciones de las notas. Así no adelanta qué se está por publicar ni lo que la redacción va a descartar. El detalle de cada hecho queda en el informe de la corrida, en la base (`pipeline_runs`), que solo ve la redacción. En una terminal, sin esa variable, el pipeline muestra todo.
+
 **Una corrida a la vez:** si una se demora, la siguiente espera. Dos corridas simultáneas podrían redactar el mismo hecho.
 
 **Memoria:** el flujo guarda la memoria entre corridas en la caché de GitHub Actions. Si la caché se pierde (GitHub borra lo que no se usa en 7 días), la corrida siguiente empieza sin memoria y sigue normalmente.

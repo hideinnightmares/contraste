@@ -94,6 +94,9 @@ jobs:
           CONTRASTE_GEMINI_PLAN: ${{ vars.CONTRASTE_GEMINI_PLAN }}
           CONTRASTE_GEMINI_RAZONAMIENTO: ${{ vars.CONTRASTE_GEMINI_RAZONAMIENTO }}
           CONTRASTE_MEMORIA: .cache/pipeline/memoria.json
+          # El registro de Actions es público: solo cantidades y errores, sin títulos ni direcciones.
+          # El detalle de cada hecho queda en el informe guardado en la base (pipeline_runs).
+          CONTRASTE_REGISTRO: resumen
         run: npm run pipeline -- ${{ inputs.solo_verificar && '--verificar' || '--write --save' }}
 
       - name: Guardar la memoria para la próxima corrida
