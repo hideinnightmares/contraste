@@ -64,6 +64,23 @@ export const editorial = {
      * clasificador). Así una corrida no se llena de un solo tema: el resto queda para la próxima.
      */
     maxPerCategoryPerRun: 2,
+    /**
+     * Fuentes independientes que necesita un hecho para que se redacte (CONTRASTE_MIN_FUENTES).
+     * Con menos, espera a que se sume otra en una corrida siguiente. Verificado alcanza con 2;
+     * para redactar se pide más, así las notas se apoyan en más de una versión.
+     */
+    minIndependentSources: 3,
+    /**
+     * Extensión del cuerpo, en palabras, según el formato. El redactor apunta a `target`; por
+     * debajo de `min`, se le pide la nota a otro modelo de la cadena y, si ninguno llega, va a la
+     * mesa con el aviso. La extensión sale de las fuentes: nunca se rellena para llegar.
+     */
+    words: {
+      noticia: { min: 450, target: [600, 900] },
+      analisis: { min: 600, target: [800, 1100] },
+      explicador: { min: 600, target: [800, 1100] },
+      breve: { min: 0, target: [80, 200] },
+    } as const satisfies Record<ContentType, { min: number; target: readonly [number, number] }>,
   },
   dedupe: {
     /** Similitud mínima de títulos (0–1) para considerar que dos ítems cuentan lo mismo. */

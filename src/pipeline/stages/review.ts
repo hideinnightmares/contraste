@@ -1,9 +1,11 @@
 import { editorial } from '@/config/editorial';
 import { confidenceLabel } from '@/domain/labels';
+import { bodyWordCount } from '@/domain/text';
 import type { Confidence } from '@/domain/types';
 import type { DraftArticle, GroundingReport, ReviewDecision, VerificationReport } from '../types';
 
 const confidenceRank: Record<Confidence, number> = { low: 0, medium: 1, high: 2 };
+const typeName = { noticia: 'una noticia', analisis: 'un análisis', explicador: 'un explicador', breve: 'una breve' } as const;
 
 /**
  * Política de revisión. Decide si un borrador puede publicarse solo, si necesita
@@ -27,6 +29,11 @@ export function decideReview(input: {
 
   const blockers: string[] = [];
   if (!draft) blockers.push('Todavía no hay borrador.');
+  if (draft) {
+    const words = bodyWordCount(draft.body);
+    const min = editorial.drafting.words[draft.type].min;
+    if (words < min) blockers.push(`La nota tiene ${words} palabras; para ${typeName[draft.type]} se piden al menos ${min}.`);
+  }
   if (v.contradictions.length > 0 && !rules.allowContradictions) blockers.push('Las fuentes se contradicen.');
   if (v.independentSources < rules.minIndependentSources) {
     blockers.push(`Hay ${v.independentSources} fuentes independientes; se exigen ${rules.minIndependentSources}.`);

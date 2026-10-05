@@ -1,4 +1,7 @@
 import { ApiError, GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { editorial } from '@/config/editorial';
+import { bodyWordCount } from '@/domain/text';
+import type { ContentType } from '@/domain/types';
 import type { DraftArticle, ResearchBrief } from '../types';
 import { WRITER_SYSTEM_PROMPT, WriterError, renderBrief, type ArticleWriter } from './writer';
 import { draftJsonSchema, draftSchema } from './draft-schema';
@@ -17,6 +20,8 @@ import { draftJsonSchema, draftSchema } from './draft-schema';
  * - Si todos fallan por algo temporal, espera y da una segunda vuelta solo con
  *   esos modelos. Si vuelve a fallar, el error es reintentable: el pipeline deja
  *   el hecho en espera para la próxima corrida.
+ * - Si un borrador sale más corto que el mínimo de su formato (config/editorial.ts), se le pide
+ *   la nota a otro modelo de la cadena; si ninguno llega, queda el más completo, con el aviso.
  * - Razonamiento bajo por defecto (CONTRASTE_GEMINI_RAZONAMIENTO): con un dossier real,
  *   el borrador sale en un cuarto del tiempo y con el mismo control de nombres y cifras.
  * - Pide la respuesta en JSON con el esquema del borrador y la valida con Zod:
@@ -98,6 +103,8 @@ export interface GeminiWriterOptions {
   retryDelayMs?: number;
   requestTimeoutMs?: number;
   maxWriteMs?: number;
+  /** Palabras mínimas del cuerpo según el formato; por defecto, las de config/editorial.ts. */
+  minWords?: (type: ContentType) => number;
   sleep?: (ms: number) => Promise<void>;
   /** Milisegundos actuales, para medir cada pedido. */
   clock?: () => number;
@@ -118,6 +125,7 @@ export class GeminiArticleWriter implements ArticleWriter {
   private readonly retryDelayMs: number;
   private readonly requestTimeoutMs: number;
   private readonly maxWriteMs: number;
+  private readonly minWords: (type: ContentType) => number;
   private readonly thinking: ThinkingLevel | null;
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly clock: () => number;
@@ -141,6 +149,7 @@ export class GeminiArticleWriter implements ArticleWriter {
     this.retryDelayMs = options.retryDelayMs ?? RETRY_DELAY_MS;
     this.requestTimeoutMs = options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
     this.maxWriteMs = options.maxWriteMs ?? MAX_WRITE_MS;
+    this.minWords = options.minWords ?? ((type) => editorial.drafting.words[type].min);
     this.thinking = thinkingFromEnv();
     this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
     this.clock = options.clock ?? Date.now;
@@ -152,6 +161,8 @@ export class GeminiArticleWriter implements ArticleWriter {
     const failures = [...this.unavailable].map((model) => `${model}: saturado o sin cupo en esta corrida`);
     let pending = this.models.filter((model) => !this.unavailable.has(model));
     const writeStarted = this.clock();
+    /** El borrador más completo de los que salieron cortos, por si ningún modelo llega al mínimo. */
+    let longestShort: { draft: DraftArticle; words: number } | null = null;
 
     rounds: for (let round = 1; round <= 2 && pending.length > 0; round++) {
       if (round === 2) await this.sleep(this.retryDelayMs);
@@ -167,8 +178,17 @@ export class GeminiArticleWriter implements ArticleWriter {
         const seconds = Math.round((this.clock() - started) / 1000);
         if ('draft' in attempt) {
           this.unavailable.delete(model);
-          this.log(`${model}: borrador listo (${seconds} s)`);
-          return attempt.draft;
+          const words = bodyWordCount(attempt.draft.body);
+          const min = this.minWords(attempt.draft.type);
+          if (words >= min) {
+            this.log(`${model}: borrador listo (${seconds} s, ${words} palabras)`);
+            return attempt.draft;
+          }
+          // Corto: otro modelo puede aprovechar mejor las fuentes. Repetirle el pedido al mismo no.
+          this.log(`${model}: borrador corto (${words} palabras, ${seconds} s); se le pide a otro modelo`);
+          failures.push(`${model}: borrador corto (${words} palabras)`);
+          if (!longestShort || words > longestShort.words) longestShort = { draft: attempt.draft, words };
+          continue;
         }
         this.log(`${model}: ${attempt.failure} (${seconds} s)`);
         failures.push(`${model}: ${attempt.failure}`);
@@ -180,6 +200,11 @@ export class GeminiArticleWriter implements ArticleWriter {
       pending = retryLater;
     }
 
+    // Mejor una nota corta en la mesa, con el aviso (stages/review.ts), que perder el hecho.
+    if (longestShort) {
+      this.log(`ningún modelo llegó a ${this.minWords(longestShort.draft.type)} palabras: queda el más completo (${longestShort.words})`);
+      return longestShort.draft;
+    }
     throw new WriterError(`Ningún modelo de Gemini pudo redactar el borrador (${failures.join('; ')}).`, true);
   }
 

@@ -127,6 +127,9 @@ describe('fuentes', () => {
   });
 });
 
+/** Cuerpo de largo normal (540 palabras), con datos que están en las fuentes de prueba. */
+const longBody: DraftArticle['body'] = Array.from({ length: 60 }, () => ({ type: 'p', text: 'El puente de 420 metros quedó habilitado al tránsito.' }));
+
 function fakeDraft(brief: ResearchBrief, overrides: Partial<DraftArticle> = {}): DraftArticle {
   return {
     title: 'Habilitan el puente sobre el río Salado',
@@ -196,11 +199,21 @@ describe('política de revisión', () => {
     const cluster = clusterItems(await fixtureItems()).find((c) => c.items.length === 5)!;
     const v = verifyCluster(cluster);
     const brief = await buildBrief(cluster, v, 'sociedad');
-    const draft = fakeDraft(brief);
+    const draft = fakeDraft(brief, { body: longBody });
     const grounding = checkGrounding(draft, brief);
     expect(decideReview({ verification: v, category: 'sociedad', draft, grounding, config: { ...editorial.review, mode: 'human' } }).decision).toBe('human_review');
     expect(decideReview({ verification: v, category: 'sociedad', draft, grounding, config: { ...editorial.review, mode: 'policy' } }).decision).toBe('auto_publish');
     expect(decideReview({ verification: v, category: 'politica', draft, grounding, config: { ...editorial.review, mode: 'policy' } }).decision).toBe('human_review');
+  });
+
+  it('una nota más corta que el mínimo de su formato no se publica sola y la mesa lo sabe', async () => {
+    const cluster = clusterItems(await fixtureItems()).find((c) => c.items.length === 5)!;
+    const v = verifyCluster(cluster);
+    const brief = await buildBrief(cluster, v, 'sociedad');
+    const draft = fakeDraft(brief);
+    const decision = decideReview({ verification: v, category: 'sociedad', draft, grounding: checkGrounding(draft, brief), config: { ...editorial.review, mode: 'policy' } });
+    expect(decision.decision).toBe('human_review');
+    expect(decision.reasons).toContain(`La nota tiene 9 palabras; para una noticia se piden al menos ${editorial.drafting.words.noticia.min}.`);
   });
 });
 

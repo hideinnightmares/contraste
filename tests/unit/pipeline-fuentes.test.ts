@@ -305,6 +305,29 @@ describe('tope de borradores por corrida', () => {
     expect(read).toHaveLength(5);
   });
 
+  it('con un mínimo de tres fuentes independientes, los hechos con dos esperan otra fuente y no ocupan lugar', async () => {
+    const written: string[] = [];
+    const read: string[] = [];
+    const writer: ArticleWriter = { name: 'prueba', write: async (brief) => (written.push(brief.headline), draftFor(brief)) };
+    const report = await runPipeline({
+      connectors,
+      writer,
+      maxDrafts: 1,
+      minIndependentSources: 3,
+      fetcher: { fetchText: async (url) => (read.push(url), null) },
+      now: () => NOW,
+    });
+    const outcome = (word: string) => report.outcomes.find((o) => o.cluster.headline.toLowerCase().includes(word))!;
+
+    expect(written).toEqual([outcome('puente').cluster.headline]);
+    for (const word of ['puerto', 'hospital']) {
+      expect(outcome(word).stage).toBe('deferred');
+      expect(outcome(word).review.reasons).toEqual(['Tiene 2 fuentes independientes; para redactar se piden 3. Espera que se sume otra.']);
+    }
+    // Lo que espera otra fuente no se lee.
+    expect(read.some((url) => url.endsWith('/puerto') || url.endsWith('/hospital'))).toBe(false);
+  });
+
   it('si el redactor se queda sin cupo, no lo intenta con el resto de la corrida', async () => {
     let calls = 0;
     const writer: ArticleWriter = {
