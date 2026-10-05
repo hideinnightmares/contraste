@@ -43,6 +43,11 @@ export interface PipelineOptions {
   /** Máximo de borradores de una misma sección por corrida. Por defecto, el de `config/editorial.ts`. */
   maxPerCategory?: number;
   /**
+   * Fuentes independientes que necesita un hecho para redactarlo. Con menos, espera a que se sume
+   * otra y no ocupa lugar en la corrida. Sin indicarlo, alcanza con que esté verificado (2).
+   */
+  minIndependentSources?: number;
+  /**
    * Minutos desde el inicio de la corrida después de los cuales no se empieza otro borrador: lo
    * que falta queda para la próxima. Acota los minutos de GitHub Actions si el redactor anda lento.
    * Sin límite si no se indica.
@@ -192,9 +197,17 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
   /** Por qué no se redacta nada más en esta corrida: se llegó al máximo o el redactor no tiene cupo. */
   let stopReason: string | null = null;
 
+  const minSources = options.minIndependentSources ?? 0;
+  const waitsForSource = (n: number) =>
+    `Tiene ${n} ${n === 1 ? 'fuente independiente' : 'fuentes independientes'}; para redactar se piden ${minSources}. Espera que se sume otra.`;
+
   for (const candidate of candidates) {
     const { cluster, category } = candidate;
     let { verification } = candidate;
+    if (verification.independentSources < minSources) {
+      outcomes.push({ cluster, verification, category, draft: null, grounding: null, review: { decision: 'hold', reasons: [waitsForSource(verification.independentSources)] }, stage: 'deferred' });
+      continue;
+    }
     if (!stopReason && researched >= maxDrafts) {
       stopReason = `La corrida llegó al máximo de ${maxDrafts} borradores: se redacta en una próxima.`;
     }
@@ -238,6 +251,16 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
 
     if (verification.status === 'unverified') {
       outcome.review = decideReview({ verification, category, draft: null, grounding: null });
+      outcomes.push(outcome);
+      continue;
+    }
+    // Leer las notas completas puede revelar que un medio repite a otro: quedan menos fuentes.
+    if (verification.independentSources < minSources) {
+      const n = verification.independentSources;
+      outcome.review = {
+        decision: 'hold',
+        reasons: [`Al leer las notas completas, quedaron ${n} ${n === 1 ? 'fuente independiente' : 'fuentes independientes'}; para redactar se piden ${minSources}. Espera que se sume otra.`],
+      };
       outcomes.push(outcome);
       continue;
     }

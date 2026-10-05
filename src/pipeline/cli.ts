@@ -19,7 +19,8 @@
  * entre corridas los ítems de las últimas 24 horas, sin el texto de las notas (ver memory.ts).
  *
  * Redacta como mucho CONTRASTE_MAX_BORRADORES_POR_CORRIDA hechos (4 si no se define), los que
- * cubren más fuentes independientes; el resto queda para la próxima corrida.
+ * cubren más fuentes independientes; el resto queda para la próxima corrida. Solo redacta los que
+ * tienen al menos CONTRASTE_MIN_FUENTES fuentes independientes (3 si no se define).
  *
  * Antes de redactar, lee el texto completo de cada nota real (respeta robots.txt, muros de pago y
  * la marca noai; ver sources/article.ts). Las fuentes de prueba no se leen.
@@ -89,6 +90,17 @@ function maxDraftsFromEnv(): number {
   return value;
 }
 
+/** CONTRASTE_MIN_FUENTES: fuentes independientes para redactar un hecho (config/editorial.ts). */
+function minSourcesFromEnv(): number {
+  const raw = process.env.CONTRASTE_MIN_FUENTES?.trim();
+  if (!raw) return editorial.drafting.minIndependentSources;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 2) {
+    throw new Error(`CONTRASTE_MIN_FUENTES tiene que ser un número entero, 2 o más (con una sola fuente nada está verificado), no "${raw}".`);
+  }
+  return value;
+}
+
 function maxRunMinutesFromEnv(): number {
   const raw = process.env.CONTRASTE_MINUTOS_POR_CORRIDA?.trim();
   if (!raw) return DEFAULT_MAX_RUN_MINUTES;
@@ -127,13 +139,14 @@ async function verifyConfig() {
 async function main() {
   if (args.has('--verificar')) return verifyConfig();
   const maxDrafts = maxDraftsFromEnv();
+  const minSources = minSourcesFromEnv();
   const maxRunMinutes = maxRunMinutesFromEnv();
   const writer = write ? createWriter({ log: line }) : null;
   const db = save ? supabaseFromEnv() : null;
   const store = db ? new SupabaseStore(db) : null;
   const destination = !save ? 'no guarda' : store ? 'base de datos' : 'archivos locales';
   console.log(
-    `Contraste · pipeline (fuentes: ${demo ? 'de prueba' : 'reales'}, revisión: ${editorial.review.mode}, redactor: ${writer ? writer.name : 'ninguno'}, máximo por corrida: ${maxDrafts} borradores en ${maxRunMinutes} min, destino: ${destination})\n`,
+    `Contraste · pipeline (fuentes: ${demo ? 'de prueba' : 'reales'}, revisión: ${editorial.review.mode}, redactor: ${writer ? writer.name : 'ninguno'}, máximo por corrida: ${maxDrafts} borradores en ${maxRunMinutes} min, mínimo ${minSources} fuentes por hecho, destino: ${destination})\n`,
   );
 
   let publisher: Publisher | null = null;
@@ -163,6 +176,7 @@ async function main() {
     publisher,
     maxDrafts,
     maxRunMinutes,
+    minIndependentSources: minSources,
     takenSlugs: store ? await store.existingSlugs() : undefined,
     coveredSourceUrls: store ? await store.coveredSourceUrls() : undefined,
     log: line,

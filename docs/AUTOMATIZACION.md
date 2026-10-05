@@ -40,6 +40,8 @@ Nunca muestra las claves.
 
 Las notas armadas con fuentes de prueba quedan marcadas como demostración (`isDemo`) y **no se guardan en la base** salvo que se agregue `--permitir-demo`. El esquema de las notas rechaza una nota real que cite una fuente de prueba.
 
+**Mínimo de fuentes para redactar.** Un hecho se redacta si tiene al menos `CONTRASTE_MIN_FUENTES` fuentes independientes (3 si no se define). Para estar verificado alcanza con 2, pero para redactar se pide más, así cada nota se apoya en varias versiones. Los hechos con 2 esperan a que se sume otra fuente en una corrida siguiente, sin ocupar lugar ni leerse. Si al leer las notas completas resulta que un medio repetía a otro y quedan menos fuentes, el hecho también espera.
+
 **Tope por corrida.** Se redactan como mucho `CONTRASTE_MAX_BORRADORES_POR_CORRIDA` hechos por corrida (4 si no se define). El orden de prioridad es este:
 
 1. los que cubren más fuentes independientes;
@@ -116,6 +118,8 @@ Con el texto completo se vuelve a verificar: si una nota resulta ser un cable de
 Lo común a los dos:
 
 - Instrucciones fijas en `writers/writer.ts`: usar solo el dossier, no copiar frases, no inventar citas, exponer contradicciones sin elegir una versión, separar hechos de interpretación, títulos sin clickbait.
+- **Notas completas** (`editorial.drafting.words`): una noticia de 600 a 900 palabras; un análisis o un explicador, de 800 a 1.100; una breve, de 80 a 200. Primer párrafo con lo esencial, desarrollo con subtítulos, antecedentes y contexto de las fuentes, y un bloque "Lo que se sabe y lo que no". Cada fuente que aporta algo se nombra en el texto, y cada afirmación lleva todas las fuentes que la respaldan.
+- **La extensión sale de las fuentes:** si no dan para tanto, la nota es más corta; nunca se rellena. Si un borrador queda por debajo del mínimo (450 palabras una noticia, 600 un análisis o un explicador), se le pide la nota a otro modelo de la cadena. Si ninguno llega, va a la mesa el más completo, con el aviso "La nota tiene N palabras", y no se publica solo aunque la revisión sea por política.
 - **Atribución en el texto:** cada dato va atribuido a su fuente por su nombre ("según el INDEC", "informó Infobae"); si hay fuentes oficiales, la nota se apoya en ellas. Una acusación contra una persona identificable va siempre atribuida y, si no está confirmada, en condicional (es lo que pide la jurisprudencia argentina, doctrina "Campillay", para no responder por información de terceros). El control posterior acepta los nombres de las fuentes.
 - Salida estructurada (`writers/draft-schema.ts`, Zod): título, bajada, cuerpo en bloques, sección, etiquetas, descripción SEO y afirmaciones con las fuentes que las respaldan. Una respuesta que no cumple el esquema se descarta.
 - El borrador registra qué modelo lo escribió (por ejemplo, `gemini:gemini-3.5-flash-lite`).
@@ -200,6 +204,7 @@ Variables opcionales:
 | --- | --- | --- |
 | `CONTRASTE_MAX_BORRADORES_POR_CORRIDA` | Máximo de borradores por corrida | 4 |
 | `CONTRASTE_MINUTOS_POR_CORRIDA` | Pasados esos minutos desde el inicio, no se empieza otro borrador: lo que falta queda para la próxima | 4 |
+| `CONTRASTE_MIN_FUENTES` | Fuentes independientes que necesita un hecho para redactarlo (2 o más) | 3 |
 | `CONTRASTE_REVIEW_MODE` | `policy` publica solo lo que cumple la política | `human`: todo pasa por la mesa |
 | `CONTRASTE_GEMINI_PLAN` | `pago` al contratar el plan pago de Gemini | Plan gratis |
 | `CONTRASTE_GEMINI_RAZONAMIENTO` | Cuánto razona Gemini antes de escribir: `minimo`, `bajo`, `medio`, `alto` o `automatico` | `bajo` |

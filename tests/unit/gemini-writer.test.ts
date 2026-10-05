@@ -55,11 +55,17 @@ function fakeClient(replies: Reply[]) {
 
 const models = ['modelo-a', 'modelo-b'];
 
-/** Redactor con el cliente falso y sin esperas reales entre vueltas. */
+/**
+ * Redactor con el cliente falso y sin esperas reales entre vueltas. Sin mínimo de palabras, salvo
+ * en los tests del largo: el borrador de prueba es cortito.
+ */
 function writerWith(client: GeminiClient, extra: Partial<GeminiWriterOptions> = {}) {
   const sleep = vi.fn(async () => {});
-  return { writer: new GeminiArticleWriter({ client, models, sleep, ...extra }), sleep };
+  return { writer: new GeminiArticleWriter({ client, models, sleep, minWords: () => 0, ...extra }), sleep };
 }
+
+/** Un borrador con un cuerpo de `words` palabras. */
+const draftOf = (words: number) => JSON.stringify({ ...validDraft, body: [{ type: 'p', text: Array.from({ length: words }, () => 'dato').join(' ') }] });
 
 const busy = () => new ApiError({ message: 'high demand', status: 503 });
 
@@ -153,7 +159,26 @@ describe('redactor de Gemini', () => {
     const lines: string[] = [];
     await writerWith(client, { clock: () => ticks.shift()!, log: (m) => lines.push(m) }).writer.write(await brief());
 
-    expect(lines).toEqual(['modelo-a: saturado (28 s)', 'modelo-b: borrador listo (9 s)']);
+    expect(lines).toEqual(['modelo-a: saturado (28 s)', 'modelo-b: borrador listo (9 s, 3 palabras)']);
+  });
+
+  it('si un borrador sale corto, le pide la nota a otro modelo', async () => {
+    const { client, calls } = fakeClient([{ text: draftOf(120) }, { text: draftOf(640) }]);
+    const lines: string[] = [];
+    const draft = await writerWith(client, { minWords: () => 450, log: (m) => lines.push(m) }).writer.write(await brief());
+
+    expect(calls.map((c) => c.model)).toEqual(['modelo-a', 'modelo-b']);
+    expect(draft.writer).toBe('gemini:modelo-b');
+    expect(lines[0]).toMatch(/^modelo-a: borrador corto \(120 palabras/);
+  });
+
+  it('si ningún modelo llega al mínimo, se queda con el más completo en vez de perder la nota', async () => {
+    const { client } = fakeClient([{ text: draftOf(300) }, { text: draftOf(120) }]);
+    const draft = await writerWith(client, { minWords: () => 450 }).writer.write(await brief());
+
+    // Va a la mesa con el aviso de nota corta (stages/review.ts).
+    expect(draft.writer).toBe('gemini:modelo-a');
+    expect(draft.body[0]).toMatchObject({ type: 'p' });
   });
 
   it('pide razonamiento bajo por defecto', async () => {

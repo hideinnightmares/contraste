@@ -47,10 +47,14 @@ export function bodyText(body: BodyBlock[]): string {
   return body.map(blockText).join('\n');
 }
 
+/** Palabras del cuerpo de una nota, contando todos sus bloques. */
+export function bodyWordCount(body: BodyBlock[]): number {
+  return bodyText(body).split(/\s+/).filter(Boolean).length;
+}
+
 /** Minutos de lectura estimados a 200 palabras por minuto, mínimo uno. */
 export function readingMinutes(body: BodyBlock[]): number {
-  const words = bodyText(body).split(/\s+/).filter(Boolean).length;
-  return Math.max(1, Math.round(words / 200));
+  return Math.max(1, Math.round(bodyWordCount(body) / 200));
 }
 
 /** Recorta en el último límite de palabra sin superar `max` caracteres. */

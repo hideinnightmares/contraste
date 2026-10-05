@@ -9,7 +9,7 @@ import { citedOutlet, knownOutlets } from '@/pipeline/stages/attribution';
 import { checkGrounding } from '@/pipeline/stages/grounding';
 import { clusterItems } from '@/pipeline/stages/dedupe';
 import { verifyCluster } from '@/pipeline/stages/verify';
-import { WRITER_SYSTEM_PROMPT, type ArticleWriter } from '@/pipeline/writers/writer';
+import { WRITER_SYSTEM_PROMPT, renderBrief, type ArticleWriter } from '@/pipeline/writers/writer';
 import type { DraftArticle, ResearchBrief, SourceDefinition } from '@/pipeline/types';
 
 /**
@@ -321,6 +321,27 @@ describe('pipeline con lectura del texto completo', () => {
 });
 
 describe('redactor', () => {
+  it('pide notas completas, con todas las fuentes, pero sin rellenar para llegar a la extensión', () => {
+    expect(WRITER_SYSTEM_PROMPT).toContain('noticia, de 600 a 900 palabras');
+    expect(WRITER_SYSTEM_PROMPT).toContain('análisis o un explicador, de 800 a 1100 palabras');
+    expect(WRITER_SYSTEM_PROMPT).toContain('Nunca rellenes');
+    expect(WRITER_SYSTEM_PROMPT).toContain('cada una aparece nombrada en el texto al menos una vez');
+    expect(WRITER_SYSTEM_PROMPT).toContain('subtítulos');
+  });
+
+  it('repite la extensión al final del dossier, que es lo que los modelos chicos más respetan', () => {
+    const brief: ResearchBrief = {
+      clusterId: 'c',
+      headline: 'Habilitan el puente',
+      category: 'sociedad',
+      sources: [{ id: 'voz:1', name: 'La Voz del Interior', kind: 'local_media', url: 'https://voz.test/1', publishedAt: NOW.toISOString(), text: 'El puente quedó habilitado.', isDemo: false }],
+      verification: verifyCluster({ id: 'c', items: [], headline: '', firstSeenAt: '', lastSeenAt: '' }),
+    };
+    const text = renderBrief(brief).trimEnd();
+    expect(text.slice(text.lastIndexOf('</dossier>'))).toContain('una noticia, entre 600 y 900 palabras');
+    expect(text.endsWith('No rellenes ni agregues nada que no esté en el dossier.')).toBe(true);
+  });
+
   it('atribuye en el texto, prioriza lo oficial y los nombres de las fuentes no cuentan como inventados', () => {
     expect(WRITER_SYSTEM_PROMPT).toContain('Atribuí en el texto cada dato a la fuente que lo aporta');
     expect(WRITER_SYSTEM_PROMPT).toContain('basá la nota en ellas');

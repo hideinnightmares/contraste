@@ -13,6 +13,7 @@
 #
 # Variables opcionales: CONTRASTE_MAX_BORRADORES_POR_CORRIDA (4 si no se define),
 # CONTRASTE_MINUTOS_POR_CORRIDA (4: pasado ese tiempo no se empieza otro borrador),
+# CONTRASTE_MIN_FUENTES (3: fuentes independientes que necesita un hecho para redactarlo),
 # CONTRASTE_REVIEW_MODE ("human" si no se define: todo pasa por la mesa), CONTRASTE_GEMINI_PLAN
 # ("pago" cuando se contrate el plan pago de Gemini) y CONTRASTE_GEMINI_RAZONAMIENTO ("bajo" si no
 # se define; ver docs/AUTOMATIZACION.md).
@@ -90,6 +91,7 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           CONTRASTE_MAX_BORRADORES_POR_CORRIDA: ${{ vars.CONTRASTE_MAX_BORRADORES_POR_CORRIDA || 4 }}
           CONTRASTE_MINUTOS_POR_CORRIDA: ${{ vars.CONTRASTE_MINUTOS_POR_CORRIDA || 4 }}
+          CONTRASTE_MIN_FUENTES: ${{ vars.CONTRASTE_MIN_FUENTES || 3 }}
           CONTRASTE_REVIEW_MODE: ${{ vars.CONTRASTE_REVIEW_MODE || 'human' }}
           CONTRASTE_GEMINI_PLAN: ${{ vars.CONTRASTE_GEMINI_PLAN }}
           CONTRASTE_GEMINI_RAZONAMIENTO: ${{ vars.CONTRASTE_GEMINI_RAZONAMIENTO }}

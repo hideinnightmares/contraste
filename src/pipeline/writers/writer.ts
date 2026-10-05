@@ -1,5 +1,9 @@
 import { categories } from '@/config/categories';
+import { editorial } from '@/config/editorial';
 import type { DraftArticle, ResearchBrief } from '../types';
+
+/** Extensión por formato (config/editorial.ts), para las instrucciones del redactor. */
+const words = editorial.drafting.words;
 
 /**
  * Redactor de borradores. La implementación con IA vive en `anthropic.ts`; se
@@ -46,7 +50,21 @@ Reglas que no se negocian:
 - Título informativo, sin clickbait, sin signos de exclamación, sin adjetivos sensacionalistas, de hasta 110 caracteres.
 - Bajada de una o dos oraciones que agregue información, no que repita el título.
 - Cada afirmación relevante va en "claims" con los ids de las fuentes que la respaldan, escritos exactamente como en el dossier (F1, F2…).
-- La sección tiene que ser una de: ${categories.map((c) => c.slug).join(', ')}.`;
+- La sección tiene que ser una de: ${categories.map((c) => c.slug).join(', ')}.
+
+Extensión y desarrollo:
+- Escribí una nota completa y detallada, no un resumen. Extensión del cuerpo: una noticia, de ${words.noticia.target[0]} a ${words.noticia.target[1]} palabras; un análisis o un explicador, de ${words.analisis.target[0]} a ${words.analisis.target[1]} palabras; una breve, de ${words.breve.target[0]} a ${words.breve.target[1]}.
+- La extensión sale de las fuentes. Si el dossier no da para tanto, escribí menos. Nunca rellenes con generalidades ni agregues datos para llegar: la regla de usar solo lo que dicen las fuentes vale más que la extensión.
+- Primer párrafo: lo esencial (qué pasó, quién, cuándo y dónde). Después, el desarrollo en varios párrafos, con subtítulos (bloques "h2") cada tres o cuatro párrafos: los detalles, las cifras, lo que dice cada parte, los antecedentes y el contexto que aportan las fuentes, y lo que se espera que pase, si las fuentes lo dicen.
+- Usá todas las fuentes del dossier que aporten algo: cada una aparece nombrada en el texto al menos una vez, y cada afirmación de "claims" lleva todas las fuentes que la respaldan, no solo una.
+- Incluí un bloque "facts" con lo que se sabe y lo que todavía no.`;
+
+/**
+ * Se repite al final del dossier, justo antes de que el modelo escriba: los modelos chicos respetan
+ * mejor lo último que leen. Con un dossier real de 5 fuentes, flash-lite pasó de 467 a 541
+ * palabras y de 3 a 5 fuentes citadas, sin datos inventados (octubre de 2026).
+ */
+const LENGTH_REMINDER = `Extensión del cuerpo, si las fuentes dan para eso: una noticia, entre ${words.noticia.target[0]} y ${words.noticia.target[1]} palabras; un análisis o un explicador, entre ${words.analisis.target[0]} y ${words.analisis.target[1]}; una breve, entre ${words.breve.target[0]} y ${words.breve.target[1]}. Varios párrafos con subtítulos, y todas las fuentes que aportan algo nombradas en el texto. No rellenes ni agregues nada que no esté en el dossier.`;
 
 /** Nombre corto de cada fuente en el dossier: los modelos copian "F2" sin errores; un id largo, no. */
 export const sourceAlias = (index: number) => `F${index + 1}`;
@@ -72,7 +90,7 @@ ${contradictions}
 ${sources}
 </dossier>
 
-Redactá el borrador siguiendo las reglas.`;
+Redactá el borrador siguiendo las reglas. ${LENGTH_REMINDER}`;
 }
 
 /**
