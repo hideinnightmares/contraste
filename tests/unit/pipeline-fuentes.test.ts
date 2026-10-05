@@ -322,6 +322,29 @@ describe('tope de borradores por corrida', () => {
     expect(report.outcomes.find((o) => o.stage === 'deferred')!.review.reasons[0]).toMatch(/sin cupo o saturado/);
   });
 
+  it('el registro deja títulos y direcciones aparte del mensaje, para que el registro público los oculte', async () => {
+    const calls: [string, string | undefined][] = [];
+    const writer: ArticleWriter = { name: 'prueba', write: async (brief) => draftFor(brief) };
+    const report = await runPipeline({
+      connectors,
+      writer,
+      maxDrafts: 10,
+      maxPerCategory: 10,
+      fetcher: { fetchText: async () => 'Texto completo de la nota, con los hechos que el feed no trae en su resumen.' },
+      publisher: { save: async (article) => `base de datos (${article.review.status})` },
+      log: (message, detail) => calls.push([message, detail]),
+      now: () => NOW,
+    });
+
+    const headlines = report.outcomes.map((o) => o.cluster.headline);
+    for (const [message] of calls) {
+      expect(message).not.toMatch(/https?:\/\//);
+      for (const h of headlines) expect(message).not.toContain(h);
+    }
+    expect(calls.some(([m, d]) => m.startsWith('texto completo de') && headlines.includes(d ?? ''))).toBe(true);
+    expect(calls.filter(([m]) => m.startsWith('guardada')).every(([m, d]) => m === 'guardada → base de datos (in_review)' && Boolean(d))).toBe(true);
+  });
+
   it('no llena una corrida con una sola sección', async () => {
     // Otro hecho de sociedad, como el puente (el clasificador lo asigna por "barrio" y "vecinos").
     const cortes = [

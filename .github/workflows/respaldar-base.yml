@@ -1,6 +1,10 @@
 # Copia de seguridad diaria de la base de datos. El plan gratis de Supabase no hace copias: este
 # flujo guarda una por día en GitHub (pestaña Actions > la corrida > Artifacts) durante 30 días.
-# Cómo restaurar: docs/BASE-DE-DATOS.md, "Copias de seguridad".
+# Cómo descifrar y restaurar: docs/BASE-DE-DATOS.md, "Copias de seguridad".
+#
+# El repositorio es público y cualquier usuario de GitHub puede bajar los archivos de una corrida:
+# la copia sube cifrada (AES-256) con la clave del secreto RESPALDO_CLAVE. Sin esa clave no se
+# puede leer. Si el secreto falta, el flujo falla en vez de subir la copia sin cifrar.
 #
 # Guarda la estructura completa (tablas, reglas de acceso, funciones y triggers) y los datos del
 # diario (esquema public). No guarda las cuentas de la mesa (esquema auth): tienen contraseñas
@@ -55,9 +59,26 @@ jobs:
           grep -qi 'copy .*articles' respaldo/datos.sql
           echo "Notas en la copia: $(awk '/^COPY .*articles/{f=1;next} /^\\\.$/{f=0} f' respaldo/datos.sql | wc -l)"
 
+      # Un solo archivo cifrado con los tres .sql. Antes de borrar la copia sin cifrar, comprueba
+      # que el cifrado se puede abrir con la misma clave y que el contenido es idéntico.
+      - name: Cifrar la copia
+        env:
+          RESPALDO_CLAVE: ${{ secrets.RESPALDO_CLAVE }}
+        run: |
+          if [ -z "$RESPALDO_CLAVE" ]; then
+            echo "::error::Falta el secreto RESPALDO_CLAVE: la copia no se sube sin cifrar."
+            exit 1
+          fi
+          tar -czf respaldo.tar.gz respaldo
+          mkdir -p cifrado
+          printf '%s' "$RESPALDO_CLAVE" | gpg --batch --yes --quiet --pinentry-mode loopback --passphrase-fd 0             --symmetric --cipher-algo AES256 --output cifrado/respaldo.tar.gz.gpg respaldo.tar.gz
+          printf '%s' "$RESPALDO_CLAVE" | gpg --batch --quiet --pinentry-mode loopback --passphrase-fd 0             --decrypt cifrado/respaldo.tar.gz.gpg | cmp - respaldo.tar.gz
+          rm -rf respaldo respaldo.tar.gz
+          ls -l cifrado
+
       - uses: actions/upload-artifact@v7
         with:
           name: respaldo-base-${{ github.run_number }}
-          path: respaldo/
+          path: cifrado/
           retention-days: 30
           if-no-files-found: error
