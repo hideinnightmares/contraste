@@ -25,7 +25,7 @@ export function checkGrounding(draft: DraftArticle, brief: ResearchBrief): Groun
     .map((f) => f.raw);
 
   const normalizedSources = normalize(sourceText);
-  const ungroundedNames = properNames(draftText).filter((name) => !normalizedSources.includes(normalize(name)));
+  const ungroundedNames = properNames(namesText(draft)).filter((name) => !normalizedSources.includes(normalize(name)));
 
   const known = new Set(brief.sources.map((s) => s.id));
   const unknownSourceIds = draft.claims.flatMap((c) => c.sourceIds).filter((id) => !known.has(id));
@@ -69,21 +69,48 @@ export function selfContradictions(draft: DraftArticle): string[] {
 }
 
 /**
+ * El texto del borrador para buscar nombres, con un salto de línea entre los
+ * ítems de listas y recuadros y entre el título y el texto de una nota.
+ * `bodyText` los une con un espacio y el final de un ítem se pegaba al
+ * principio del siguiente: "…con Brasil" + "El acuerdo…" daba "Brasil El".
+ */
+function namesText(draft: DraftArticle): string {
+  const lines = draft.body.flatMap((block): string[] => {
+    switch (block.type) {
+      case 'p':
+      case 'h2':
+        return [block.text];
+      case 'list':
+        return block.items;
+      case 'facts':
+        return [...block.confirmed, ...block.unconfirmed];
+      case 'note':
+        return [block.title, block.text];
+    }
+  });
+  return [draft.title, draft.dek, ...lines].join('\n');
+}
+
+/**
  * Nombres propios: secuencias de dos o más palabras capitalizadas que no están
  * al inicio de una oración. Heurística simple, a propósito conservadora.
  */
 export function properNames(text: string): string[] {
   const names: string[] = [];
   const word = '[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+';
-  const re = new RegExp(`${word}(?: +(?:(?:de|del|la|las|los|y) +)?${word})+`, 'g');
+  const link = '(?:de(?: +(?:la|las|los))?|del|la|las|los|y)';
+  const re = new RegExp(`${word}(?: +(?:${link} +)?${word})+`, 'g');
   for (const sentence of text.split(/[.!?¿¡:;\n]+/)) {
     const trimmed = sentence.trimStart();
     let m: RegExpExecArray | null;
     re.lastIndex = 0;
     while ((m = re.exec(trimmed))) {
       // La primera palabra de una oración siempre va en mayúscula: no indica nombre propio.
-      const candidate = m.index === 0 ? m[0].replace(new RegExp(`^${word} +(?:(?:de|del|la|las|los|y) +)?`), '') : m[0];
-      if (/^[A-ZÁÉÍÓÚÑ]\S+(?: +\S+)+$/.test(candidate)) names.push(candidate);
+      const candidate = m.index === 0 ? m[0].replace(new RegExp(`^${word} +(?:${link} +)?`), '') : m[0];
+      // "y" separa dos nombres ("Lula y Bolsonaro"): cada parte se valida por su cuenta.
+      for (const part of candidate.split(/ +y +/)) {
+        if (/^[A-ZÁÉÍÓÚÑ]\S+(?: +\S+)+$/.test(part)) names.push(part);
+      }
     }
   }
   return names;
