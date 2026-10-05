@@ -125,7 +125,11 @@ Lo común a los dos:
 ### Gemini (por defecto, gratis)
 
 - Clave en [Google AI Studio](https://aistudio.google.com/apikey), guardada como `GEMINI_API_KEY` en `.env.pipeline`. Ese archivo lo lee solo el pipeline: en `.env.local` terminaría dentro del código que se publica en Cloudflare (ver [docs/DESPLIEGUE.md](DESPLIEGUE.md)). El plan gratuito no pide tarjeta y está disponible en Argentina.
-- Cadena de modelos (`CONTRASTE_GEMINI_MODELS`): `gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.5-flash` y, al final, `gemini-3.5-flash-lite`. El cupo gratuito es por modelo y los Flash se saturan seguido (error 503): si uno no responde, pasa al siguiente. Si todos fallan por algo temporal, espera 20 segundos y da una segunda vuelta.
+- Cadena de modelos (`CONTRASTE_GEMINI_MODELS`): `gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3-flash-preview` y, al final, `gemini-3.5-flash-lite` y `gemini-3.1-flash-lite`. Los Flash se saturan seguido (error 503): si uno no responde, pasa al siguiente. Si todos fallan por algo temporal, espera 20 segundos y da una segunda vuelta.
+- **Cupo gratis** (AI Studio, *Límite de frecuencia*, octubre de 2026): cada modelo tiene el suyo. Cada Flash permite 5 pedidos por minuto y 20 por día; cada Flash Lite, 15 por minuto y 500 por día. Los cinco Flash suman 100 borradores por día, contra un máximo de 32 del pipeline (8 corridas de 4). Gemma 4 31B tiene más cupo, pero se descartó: con un dossier real no respondió en 2 minutos, y su tope de 16.000 tokens de entrada por minuto deja pasar un solo borrador por minuto.
+- Un modelo saturado tarda 20 a 45 segundos en rechazar el pedido. Por eso, el que falla por algo temporal no se vuelve a probar en el resto de la corrida, ningún pedido espera más de 60 segundos y un mismo borrador no prueba modelos durante más de 2 minutos y medio (si se pasa, queda para la próxima corrida). Antes de estos cambios, cada borrador repetía esos intentos y la primera corrida real tardó 10 minutos.
+- **Razonamiento** (`CONTRASTE_GEMINI_RAZONAMIENTO`): `bajo` por defecto; también `minimo`, `medio`, `alto` o `automatico` (cada modelo usa el suyo). Medido el 3 de octubre de 2026 con un dossier real de 9 fuentes: `gemini-3.5-flash` tardó 35 segundos con su razonamiento por defecto y 9 con razonamiento bajo, y los dos borradores pasaron igual el control de nombres y cifras. A un modelo que no acepta el nivel se le pide sin él.
+- El registro de cada corrida muestra cada pedido, con el modelo, el resultado y lo que tardó (por ejemplo, `gemini-3.8-flash: saturado (28 s)`).
 - Los Flash Lite escriben peor (más repeticiones, más errores de criterio) pero casi siempre responden. Sus borradores pasan por los mismos controles.
 - Google retira modelos: `gemini-2.5-flash`, por ejemplo, ya no se ofrece a cuentas nuevas (error 404). Un modelo retirado se salta solo; conviene revisar la lista cada tanto.
 - **Uso de datos:** en el plan gratuito, Google usa lo enviado para mejorar sus productos y puede revisarlo una persona. El dossier contiene solo texto de fuentes públicas; nunca hay que mandarle datos personales, del newsletter ni material sin publicar de terceros. Por eso tampoco lleva el texto completo de los sitios que se lo prohíben a Google (ver [Lectura del texto completo](#lectura-del-texto-completo)). El plan pago de Gemini no usa los datos para entrenar: al contratarlo, definir `CONTRASTE_GEMINI_PLAN=pago`.
@@ -195,8 +199,10 @@ Variables opcionales:
 | Variable | Qué hace | Si no se define |
 | --- | --- | --- |
 | `CONTRASTE_MAX_BORRADORES_POR_CORRIDA` | Máximo de borradores por corrida | 4 |
+| `CONTRASTE_MINUTOS_POR_CORRIDA` | Pasados esos minutos desde el inicio, no se empieza otro borrador: lo que falta queda para la próxima | 4 |
 | `CONTRASTE_REVIEW_MODE` | `policy` publica solo lo que cumple la política | `human`: todo pasa por la mesa |
 | `CONTRASTE_GEMINI_PLAN` | `pago` al contratar el plan pago de Gemini | Plan gratis |
+| `CONTRASTE_GEMINI_RAZONAMIENTO` | Cuánto razona Gemini antes de escribir: `minimo`, `bajo`, `medio`, `alto` o `automatico` | `bajo` |
 
 **El registro de GitHub es público**, porque el repositorio lo es. Por eso el flujo corre con `CONTRASTE_REGISTRO=resumen`: muestra cuántos ítems leyó cada fuente, cuánto tardó cada pedido a Gemini, cuántos borradores salieron y los errores, pero no los títulos ni las direcciones de las notas. Así no adelanta qué se está por publicar ni lo que la redacción va a descartar. El detalle de cada hecho queda en el informe de la corrida, en la base (`pipeline_runs`), que solo ve la redacción. En una terminal, sin esa variable, el pipeline muestra todo.
 
@@ -212,7 +218,7 @@ Variables opcionales:
 
 Que Gemini se quede sin cupo no es un error: pasa en el plan gratis, y el hecho se redacta en la próxima corrida. Que bloquee el pedido de una nota tampoco, si salieron otros borradores: esa nota queda en la mesa para revisar.
 
-**Cupo de minutos:** unos 3 minutos facturados por corrida (ver [DESPLIEGUE.md](DESPLIEGUE.md#cuánto-se-puede-publicar)).
+**Cupo de minutos:** unos 3 minutos facturados por corrida (ver [DESPLIEGUE.md](DESPLIEGUE.md#cuánto-se-puede-publicar)). Para que una corrida lenta no se coma el cupo, pasados `CONTRASTE_MINUTOS_POR_CORRIDA` (4) no se empieza otro borrador, y el trabajo se corta a los 10 minutos aunque algo se cuelgue. Antes de activar las corridas automáticas, conviene mirar la duración de dos o tres corridas a mano en la pestaña Actions.
 
 ## Distribución
 

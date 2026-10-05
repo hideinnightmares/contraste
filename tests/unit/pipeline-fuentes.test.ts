@@ -322,6 +322,33 @@ describe('tope de borradores por corrida', () => {
     expect(report.outcomes.find((o) => o.stage === 'deferred')!.review.reasons[0]).toMatch(/sin cupo o saturado/);
   });
 
+  it('si la corrida llega a su tiempo máximo, lo que falta queda para la próxima', async () => {
+    let minutes = 0;
+    const written: string[] = [];
+    const writer: ArticleWriter = {
+      name: 'prueba',
+      async write(brief) {
+        written.push(brief.headline);
+        minutes += 3;
+        return draftFor(brief);
+      },
+    };
+    const report = await runPipeline({
+      connectors,
+      writer,
+      maxDrafts: 10,
+      maxPerCategory: 10,
+      maxRunMinutes: 4,
+      now: () => new Date(NOW.getTime() + minutes * 60_000),
+    });
+
+    // Empieza el primero a los 0 minutos y el segundo a los 3; el tercero ya no.
+    expect(written).toHaveLength(2);
+    const deferred = report.outcomes.filter((o) => o.stage === 'deferred');
+    expect(deferred).toHaveLength(1);
+    expect(deferred[0].review.reasons).toEqual(['La corrida llegó a su tiempo máximo (4 minutos): se redacta en la próxima.']);
+  });
+
   it('el registro deja títulos y direcciones aparte del mensaje, para que el registro público los oculte', async () => {
     const calls: [string, string | undefined][] = [];
     const writer: ArticleWriter = { name: 'prueba', write: async (brief) => draftFor(brief) };

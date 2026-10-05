@@ -5,7 +5,7 @@ import { FixtureConnector } from '@/pipeline/sources/fixture';
 import { clusterItems } from '@/pipeline/stages/dedupe';
 import { verifyCluster } from '@/pipeline/stages/verify';
 import { buildBrief } from '@/pipeline/stages/research';
-import { GeminiArticleWriter, type GeminiClient } from '@/pipeline/writers/gemini';
+import { GeminiArticleWriter, type GeminiClient, type GeminiWriterOptions } from '@/pipeline/writers/gemini';
 import { draftJsonSchema } from '@/pipeline/writers/draft-schema';
 import { createWriter } from '@/pipeline/writers';
 import { WriterError } from '@/pipeline/writers/writer';
@@ -56,10 +56,12 @@ function fakeClient(replies: Reply[]) {
 const models = ['modelo-a', 'modelo-b'];
 
 /** Redactor con el cliente falso y sin esperas reales entre vueltas. */
-function writerWith(client: GeminiClient) {
+function writerWith(client: GeminiClient, extra: Partial<GeminiWriterOptions> = {}) {
   const sleep = vi.fn(async () => {});
-  return { writer: new GeminiArticleWriter({ client, models, sleep }), sleep };
+  return { writer: new GeminiArticleWriter({ client, models, sleep, ...extra }), sleep };
 }
+
+const busy = () => new ApiError({ message: 'high demand', status: 503 });
 
 describe('redactor de Gemini', () => {
   it('devuelve un borrador validado y anota qué modelo lo escribió', async () => {
@@ -87,13 +89,91 @@ describe('redactor de Gemini', () => {
   });
 
   it('si todos están saturados, espera y da una segunda vuelta', async () => {
-    const busy = () => new ApiError({ message: 'high demand', status: 503 });
     const { client, calls } = fakeClient([busy(), busy(), { text: JSON.stringify(validDraft) }]);
     const { writer, sleep } = writerWith(client);
     const draft = await writer.write(await brief());
 
     expect(sleep).toHaveBeenCalledTimes(1);
     expect(calls.map((c) => c.model)).toEqual(['modelo-a', 'modelo-b', 'modelo-a']);
+    expect(draft.writer).toBe('gemini:modelo-a');
+  });
+
+  it('un modelo saturado no se vuelve a probar en los borradores siguientes de la corrida', async () => {
+    const { client, calls } = fakeClient([busy(), { text: JSON.stringify(validDraft) }, { text: JSON.stringify(validDraft) }]);
+    const { writer } = writerWith(client);
+    await writer.write(await brief());
+    const second = await writer.write(await brief());
+
+    // Un modelo saturado tarda 20 a 30 segundos en rechazar el pedido: probarlo en cada borrador alarga la corrida.
+    expect(calls.map((c) => c.model)).toEqual(['modelo-a', 'modelo-b', 'modelo-b']);
+    expect(second.writer).toBe('gemini:modelo-b');
+  });
+
+  it('si todos quedaron saturados en la corrida, el borrador siguiente falla enseguida y sin esperar', async () => {
+    const { client, calls } = fakeClient([busy(), busy(), busy(), busy()]);
+    const { writer, sleep } = writerWith(client);
+    await writer.write(await brief()).catch(() => {});
+    const error = await writer.write(await brief()).catch((e) => e);
+
+    expect(calls).toHaveLength(4);
+    expect(sleep).toHaveBeenCalledTimes(1);
+    expect(error).toBeInstanceOf(WriterError);
+    expect(error.retryable).toBe(true);
+    expect(error.message).toMatch(/modelo-a: saturado.*modelo-b: saturado/);
+  });
+
+  it('corta un pedido que no responde a tiempo y pasa al modelo siguiente', async () => {
+    const timeout = new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+    const { client, calls } = fakeClient([timeout, { text: JSON.stringify(validDraft) }]);
+    const lines: string[] = [];
+    const draft = await writerWith(client, { requestTimeoutMs: 45_000, log: (m) => lines.push(m) }).writer.write(await brief());
+
+    expect(calls[0].config.abortSignal).toBeInstanceOf(AbortSignal);
+    expect(lines[0]).toMatch(/^modelo-a: sin respuesta en 45 s/);
+    expect(draft.writer).toBe('gemini:modelo-b');
+  });
+
+  it('si un borrador se queda sin tiempo, no prueba más modelos y queda para la próxima corrida', async () => {
+    const { client, calls } = fakeClient([busy(), busy()]);
+    const ticks = [0, 0, 100_000, 100_000, 160_000];
+    const error = await writerWith(client, { clock: () => ticks.shift() ?? 160_000, maxWriteMs: 150_000 })
+      .writer.write(await brief())
+      .catch((e) => e);
+
+    // Con 7 modelos saturados y dos vueltas, un solo borrador podría tardar varios minutos.
+    expect(calls.map((c) => c.model)).toEqual(['modelo-a', 'modelo-b']);
+    expect(error).toBeInstanceOf(WriterError);
+    expect(error.retryable).toBe(true);
+    expect(error.message).toMatch(/sin tiempo/);
+  });
+
+  it('anota en el registro cada intento, con su resultado y lo que tardó', async () => {
+    const { client } = fakeClient([busy(), { text: JSON.stringify(validDraft) }]);
+    const ticks = [0, 0, 28_400, 28_400, 37_600];
+    const lines: string[] = [];
+    await writerWith(client, { clock: () => ticks.shift()!, log: (m) => lines.push(m) }).writer.write(await brief());
+
+    expect(lines).toEqual(['modelo-a: saturado (28 s)', 'modelo-b: borrador listo (9 s)']);
+  });
+
+  it('pide razonamiento bajo por defecto', async () => {
+    const { client, calls } = fakeClient([{ text: JSON.stringify(validDraft) }]);
+    await writerWith(client).writer.write(await brief());
+
+    expect(calls[0].config.thinkingConfig).toEqual({ thinkingLevel: 'LOW' });
+  });
+
+  it('si un modelo no acepta el nivel de razonamiento, lo vuelve a pedir sin él', async () => {
+    const { client, calls } = fakeClient([
+      new ApiError({ message: 'Thinking level is not supported for this model.', status: 400 }),
+      { text: JSON.stringify(validDraft) },
+    ]);
+    const draft = await writerWith(client).writer.write(await brief());
+
+    expect(calls.map((c) => [c.model, c.config.thinkingConfig])).toEqual([
+      ['modelo-a', { thinkingLevel: 'LOW' }],
+      ['modelo-a', undefined],
+    ]);
     expect(draft.writer).toBe('gemini:modelo-a');
   });
 
@@ -170,5 +250,30 @@ describe('elección del redactor', () => {
   it('rechaza un redactor que no existe', () => {
     vi.stubEnv('CONTRASTE_WRITER', 'otro');
     expect(() => createWriter()).toThrow(/Opciones: gemini, anthropic/);
+  });
+});
+
+describe('razonamiento de Gemini', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  async function thinkingConfigWith(value: string) {
+    vi.stubEnv('CONTRASTE_GEMINI_RAZONAMIENTO', value);
+    const { client, calls } = fakeClient([{ text: JSON.stringify(validDraft) }]);
+    await writerWith(client).writer.write(await brief());
+    return calls[0].config.thinkingConfig;
+  }
+
+  it('se elige con CONTRASTE_GEMINI_RAZONAMIENTO, con o sin tilde', async () => {
+    expect(await thinkingConfigWith('alto')).toEqual({ thinkingLevel: 'HIGH' });
+    expect(await thinkingConfigWith('Mínimo')).toEqual({ thinkingLevel: 'MINIMAL' });
+  });
+
+  it('"automatico" deja que cada modelo use el suyo', async () => {
+    expect(await thinkingConfigWith('automático')).toBeUndefined();
+  });
+
+  it('un valor desconocido se rechaza al arrancar, con las opciones', () => {
+    vi.stubEnv('CONTRASTE_GEMINI_RAZONAMIENTO', 'muchisimo');
+    expect(() => new GeminiArticleWriter({ client: fakeClient([]).client })).toThrow(/minimo, bajo, medio, alto, automatico/);
   });
 });

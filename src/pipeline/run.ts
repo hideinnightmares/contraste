@@ -42,6 +42,12 @@ export interface PipelineOptions {
   maxDrafts?: number;
   /** Máximo de borradores de una misma sección por corrida. Por defecto, el de `config/editorial.ts`. */
   maxPerCategory?: number;
+  /**
+   * Minutos desde el inicio de la corrida después de los cuales no se empieza otro borrador: lo
+   * que falta queda para la próxima. Acota los minutos de GitHub Actions si el redactor anda lento.
+   * Sin límite si no se indica.
+   */
+  maxRunMinutes?: number;
   /** Slugs ya usados en el sitio, para no repetir. */
   takenSlugs?: Set<string>;
   /**
@@ -191,6 +197,9 @@ export async function runPipeline(options: PipelineOptions = {}): Promise<Pipeli
     let { verification } = candidate;
     if (!stopReason && researched >= maxDrafts) {
       stopReason = `La corrida llegó al máximo de ${maxDrafts} borradores: se redacta en una próxima.`;
+    }
+    if (!stopReason && options.maxRunMinutes !== undefined && now().getTime() - startedAt.getTime() >= options.maxRunMinutes * 60_000) {
+      stopReason = `La corrida llegó a su tiempo máximo (${options.maxRunMinutes} minutos): se redacta en la próxima.`;
     }
     const section = category ?? '';
     const sameSection = perCategory.get(section) ?? 0;
