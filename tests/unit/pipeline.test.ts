@@ -9,7 +9,7 @@ import { clusterItems } from '@/pipeline/stages/dedupe';
 import { verifyCluster } from '@/pipeline/stages/verify';
 import { classifyCluster } from '@/pipeline/stages/classify';
 import { extractFigures } from '@/pipeline/stages/figures';
-import { checkGrounding } from '@/pipeline/stages/grounding';
+import { checkGrounding, properNames } from '@/pipeline/stages/grounding';
 import { decideReview } from '@/pipeline/stages/review';
 import { buildBrief } from '@/pipeline/stages/research';
 import { draftToArticle } from '@/pipeline/stages/publish';
@@ -145,6 +145,24 @@ function fakeDraft(brief: ResearchBrief, overrides: Partial<DraftArticle> = {}):
   };
 }
 
+function briefFrom(sources: { name: string; text: string }[]): ResearchBrief {
+  return {
+    clusterId: 'c',
+    headline: 'Hecho de prueba',
+    category: 'politica',
+    sources: sources.map((s, i) => ({
+      id: `prueba:${i}`,
+      name: s.name,
+      kind: 'local_media' as const,
+      url: `https://prueba.test/${i}`,
+      publishedAt: NOW.toISOString(),
+      text: s.text,
+      isDemo: true,
+    })),
+    verification: verifyCluster({ id: 'c', items: [], headline: '', firstSeenAt: '', lastSeenAt: '' }),
+  };
+}
+
 describe('control posterior a la redacción', () => {
   it('rechaza cifras y nombres que no están en las fuentes', async () => {
     const cluster = clusterItems(await fixtureItems()).find((c) => c.items.length === 5)!;
@@ -158,6 +176,66 @@ describe('control posterior a la redacción', () => {
     expect(g.ok).toBe(false);
     expect(g.ungroundedFigures).toContain('90 millones de pesos');
     expect(g.ungroundedNames).toContain('Juan Pérez Gómez');
+  });
+
+  // Falsos positivos de la primera corrida real (3 de octubre de 2026): la "y"
+  // unía dos nombres en uno ("Lula y Bolsonaro") que no figuraba literal en las fuentes.
+  it('una «y» separa nombres: cada uno se busca por su cuenta en las fuentes', () => {
+    const brief = briefFrom([
+      { name: 'Clarín', text: 'Texto de prueba que nombra a Lula.' },
+      { name: 'Ámbito', text: 'Texto de prueba que nombra a Bolsonaro.' },
+      { name: 'El Cronista', text: 'Texto de prueba que nombra a Javier Milei.' },
+      { name: 'Noticias Argentinas', text: 'Texto de prueba.' },
+    ]);
+    const draft = (...paragraphs: string[]) => fakeDraft(brief, { body: paragraphs.map((text) => ({ type: 'p' as const, text })) });
+
+    const g = checkGrounding(
+      draft(
+        'La nota menciona a Lula y Bolsonaro.',
+        'Lo informaron Ámbito y El Cronista.',
+        'Lo informaron Noticias Argentinas y Ámbito.',
+        'Lo informaron Ámbito y Clarín, y también Clarín y Ámbito.',
+        'El Cronista y Clarín coincidieron.',
+        'Hablaron Javier Milei y Lula.',
+        'Hay comercio entre Argentina y Brasil.',
+      ),
+      brief,
+    );
+    expect(g.ungroundedNames).toEqual([]);
+
+    // Un nombre que no está en las fuentes se sigue marcando, solo o unido a otro por "y".
+    const invented = checkGrounding(draft('Lula y Bolsonaro visitaron la Casa Rosada.', 'Lo confirmaron la Casa Rosada y Clarín.'), brief);
+    expect(invented.ok).toBe(false);
+    expect(invented.ungroundedNames).toEqual(['Casa Rosada']);
+  });
+
+  it('no arma un nombre con el final de un ítem y el principio del siguiente', () => {
+    const brief = briefFrom([{ name: 'Clarín', text: 'Texto de prueba sobre Brasil.' }]);
+    const g = checkGrounding(
+      fakeDraft(brief, {
+        body: [
+          { type: 'list', items: ['Hay comercio con Brasil', 'El acuerdo sigue vigente'] },
+          { type: 'facts', confirmed: ['Hay comercio con Brasil'], unconfirmed: ['El acuerdo seguiría vigente'] },
+          { type: 'note', tone: 'context', title: 'Comercio con Brasil', text: 'El acuerdo sigue vigente.' },
+        ],
+      }),
+      brief,
+    );
+    expect(g.ungroundedNames).toEqual([]);
+  });
+
+  it('mantiene enteros los nombres con «de»', () => {
+    expect(properNames('Lo informó el Banco Central de la República.')).toEqual(['Banco Central de la República']);
+    expect(properNames('Lo informaron el Banco Central de la República y Noticias Argentinas.')).toEqual([
+      'Banco Central de la República',
+      'Noticias Argentinas',
+    ]);
+
+    const draft = (brief: ResearchBrief) => fakeDraft(brief, { body: [{ type: 'p', text: 'Lo informó el Banco Central de la República.' }] });
+    const grounded = briefFrom([{ name: 'Clarín', text: 'Texto de prueba sobre el Banco Central de la República Argentina.' }]);
+    expect(checkGrounding(draft(grounded), grounded).ungroundedNames).toEqual([]);
+    const ungrounded = briefFrom([{ name: 'Clarín', text: 'Texto de prueba sobre el Banco Central.' }]);
+    expect(checkGrounding(draft(ungrounded), ungrounded).ungroundedNames).toEqual(['Banco Central de la República']);
   });
 
   it('detecta un dato que figura a la vez como confirmado y como no confirmado', async () => {
