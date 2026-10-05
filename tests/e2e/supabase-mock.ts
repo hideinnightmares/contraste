@@ -7,7 +7,8 @@ import type { Article } from '@/domain/types';
  * (`/rest/v1`, PostgREST). Imita lo del servidor que le importa a la pantalla:
  *
  * - solo una persona que está en `editors` ve notas, y solo con la verificación en dos pasos
- *   (sesión `aal2`): con la contraseña sola, la base no devuelve nada;
+ *   (sesión `aal2`): con la contraseña sola, la base no devuelve nada, salvo a un editor
+ *   eximido (`editors.sin_dos_pasos`);
  * - una actualización exige la misma `updated_at` que se leyó (si no, no cambia nada);
  * - al publicar, la base pone la fecha y la firma, y rechaza lo que las reglas no permiten
  *   (trigger `private.articles_reglas`, ver supabase/migrations).
@@ -20,9 +21,11 @@ export const EDITOR = { id: '7d3c1a52-0b1e-4c55-9a0e-2f6b8c1d4e90', email: 'edit
 /** Editor que todavía no configuró la app: la mesa se la hace configurar. */
 export const NEW_EDITOR = { id: '3b9d2c7e-4a1f-4e6b-8c5d-9e0f1a2b3c4d', email: 'editor.nuevo@example.com', password: 'clave-de-prueba' };
 export const OUTSIDER = { id: '1f0e9d8c-7b6a-4c3d-8e2f-1a0b9c8d7e6f', email: 'lector@example.com', password: 'clave-de-prueba' };
+/** Editor eximido de la verificación en dos pasos: entra con la contraseña sola. */
+export const EXEMPT_EDITOR = { id: '5c4b3a29-1e0d-4f8c-9b7a-6d5e4f3a2b1c', email: 'editor.sin.codigo@example.com', password: 'clave-de-prueba' };
 /** El único código que la app simulada da por bueno. */
 export const TOTP_CODE = '123456';
-const USERS = [EDITOR, NEW_EDITOR, OUTSIDER];
+const USERS = [EDITOR, NEW_EDITOR, OUTSIDER, EXEMPT_EDITOR];
 
 type Level = 'aal1' | 'aal2';
 interface Factor {
@@ -215,7 +218,9 @@ const QR_SVG =
 
 export class FakeSupabase {
   readonly rows: Row[];
-  readonly editors = new Set([EDITOR.id, NEW_EDITOR.id]);
+  readonly editors = new Set([EDITOR.id, NEW_EDITOR.id, EXEMPT_EDITOR.id]);
+  /** Editores con `sin_dos_pasos`. */
+  readonly exempt = new Set([EXEMPT_EDITOR.id]);
   /** Apps de autenticación de cada usuario. La editora ya tiene la suya. */
   readonly factors = new Map<string, Factor[]>([
     [EDITOR.id, [{ id: 'f-editora', friendly_name: 'Mesa de redacción', factor_type: 'totp', status: 'verified', created_at: T0, updated_at: T0 }]],
@@ -346,13 +351,15 @@ export class FakeSupabase {
 
     if (table === 'editors') {
       const wanted = param('user_id')?.replace(/^eq\./, '');
-      return this.json(route, 200, isEditor && wanted === user ? [{ user_id: user }] : []);
+      return this.json(route, 200, isEditor && wanted === user ? [{ user_id: user, created_at: T0, sin_dos_pasos: this.exempt.has(user) }] : []);
     }
     if (table !== 'articles') return this.json(route, 404, { code: 'PGRST205', message: `No existe la tabla ${table}` });
 
     // Reglas de acceso: sin sesión, lo publicado; con sesión, nada sin el segundo paso (regla
-    // restrictiva aal2); con el segundo paso, todo si es editor y lo publicado si no.
-    const visible = current && current.aal !== 'aal2' ? [] : this.rows.filter((r) => isEditor || r.document.review.status === 'published');
+    // restrictiva aal2) salvo a un editor eximido; con el segundo paso, todo si es editor y lo
+    // publicado si no.
+    const secondStep = !current || current.aal === 'aal2' || this.exempt.has(current.userId);
+    const visible = secondStep ? this.rows.filter((r) => isEditor || r.document.review.status === 'published') : [];
     const id = param('id')?.replace(/^eq\./, '');
     const statuses = param('status')?.match(/^in\.\((.*)\)$/)?.[1].split(',');
     const matching = visible.filter((r) => (!id || r.id === id) && (!statuses || statuses.includes(r.document.review.status)));

@@ -84,7 +84,8 @@ export async function signOut(): Promise<void> {
 // ─── Verificación en dos pasos ─────────────────────────────────────────────────
 // La base solo deja leer y cambiar notas con una sesión que pasó el segundo paso (aal2,
 // migración 20261002211500_verificacion_en_dos_pasos.sql). Con la contraseña sola (aal1) la
-// mesa pide el código de la app de autenticación, o la configura la primera vez.
+// mesa pide el código de la app de autenticación, o la configura la primera vez. Salvo a un
+// editor eximido a mano (`editors.sin_dos_pasos`, migración 20261005004815).
 
 export type AssuranceLevel = 'aal1' | 'aal2' | null;
 
@@ -141,11 +142,16 @@ export async function verifyCode(factorId: string, code: string): Promise<void> 
   throw deskError(error);
 }
 
-/** ¿La persona con sesión está en la redacción? (la regla de la base solo le deja ver su propia fila). */
-export async function isEditor(userId: string): Promise<boolean> {
-  const { data, error } = await browserSupabase().from('editors').select('user_id').eq('user_id', userId).maybeSingle();
+/**
+ * ¿La persona con sesión está en la redacción, y está eximida del segundo paso
+ * (`editors.sin_dos_pasos`)? La regla de la base solo le deja ver su propia fila. Pide `*` y no
+ * la lista de columnas: al fusionar, el sitio nuevo puede publicarse antes de que la migración
+ * agregue la columna, y así no falla en ese rato.
+ */
+export async function editorAccess(userId: string): Promise<{ editor: boolean; withoutSecondFactor: boolean }> {
+  const { data, error } = await browserSupabase().from('editors').select('*').eq('user_id', userId).maybeSingle();
   if (error) throw deskError(error);
-  return Boolean(data);
+  return { editor: Boolean(data), withoutSecondFactor: data?.sin_dos_pasos === true };
 }
 
 const LIST_COLUMNS =

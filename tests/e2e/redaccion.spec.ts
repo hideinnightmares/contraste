@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { collectErrors, expectNoA11yViolations } from './helpers';
-import { EDITOR, FakeSupabase, NEW_EDITOR, OUTSIDER, TOTP_CODE } from './supabase-mock';
+import { EDITOR, EXEMPT_EDITOR, FakeSupabase, NEW_EDITOR, OUTSIDER, TOTP_CODE } from './supabase-mock';
 
 /**
  * Mesa de redacción con sesión, contra un Supabase simulado (supabase-mock.ts): nunca toca la
@@ -121,6 +121,13 @@ test.describe('mesa de redacción con sesión', () => {
     await page.getByRole('button', { name: 'Entrar' }).click();
     await expect(alerts(page)).toContainText('no forma parte de la redacción');
     await expect(page.getByRole('link', { name: /El puerto licitará/ })).toHaveCount(0);
+  });
+
+  test('un editor eximido de la verificación en dos pasos entra con la contraseña sola', async ({ page }) => {
+    await new FakeSupabase().install(page);
+    await enterPassword(page, EXEMPT_EDITOR);
+    await expect(page.getByRole('link', { name: /El puerto licitará/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Verificación en dos pasos' })).toHaveCount(0);
   });
 
   test('una dirección de nota mal copiada no rompe la mesa', async ({ page }) => {
