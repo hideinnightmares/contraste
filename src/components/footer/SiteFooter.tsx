@@ -36,6 +36,9 @@ export function SiteFooter() {
           </h2>
           <ul role="list" className={styles.links}>
             <li>
+              <Link href="/quienes-somos">Quiénes somos</Link>
+            </li>
+            <li>
               <Link href="/metodologia">Cómo trabajamos</Link>
             </li>
             <li>

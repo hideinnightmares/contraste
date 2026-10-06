@@ -21,12 +21,15 @@ export const site = {
    */
   demoMode: process.env.CONTRASTE_DEMO_MODE !== 'false',
   organization: {
-    legalName: null as string | null,
-    taxId: null as string | null, // CUIT
-    address: null as string | null,
-    contactEmail: null as string | null,
-    privacyEmail: null as string | null,
-    editorInChief: null as string | null,
+    /** Responsable del medio. Es una persona, así que no hay razón social. */
+    legalName: 'Mateo Pradal' as string | null,
+    /** CUIT: sin informar. Mientras sea `null`, las páginas legales no lo mencionan. */
+    taxId: null as string | null,
+    /** Localidad del responsable. */
+    address: 'San Miguel' as string | null,
+    contactEmail: 'mateopradal23@gmail.com' as string | null,
+    privacyEmail: 'mateopradal23@gmail.com' as string | null,
+    editorInChief: 'Mateo Pradal' as string | null,
     foundingYear: null as number | null,
   },
   social: {

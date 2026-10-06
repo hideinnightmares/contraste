@@ -218,7 +218,29 @@ test.describe('privacidad', () => {
     await expect(dialog.getByRole('switch', { name: /Publicidad personalizada/ })).not.toBeChecked();
   });
 
-  for (const path of ['/privacidad', '/terminos', '/cookies', '/metodologia']) {
+  test('"Quiénes somos" dice quién edita el diario y cómo contactarlo, y se llega desde el pie', async ({ page }) => {
+    await dismissConsent(page);
+    await page.goto('/');
+    await page.getByRole('contentinfo').getByRole('link', { name: 'Quiénes somos' }).click();
+    await expect(page).toHaveURL(/\/quienes-somos$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Quiénes somos' })).toBeVisible();
+    await expect(page.getByRole('main')).toContainText('Mateo Pradal');
+    await expect(page.getByRole('main').getByRole('link', { name: 'mateopradal23@gmail.com' })).toHaveAttribute('href', 'mailto:mateopradal23@gmail.com');
+  });
+
+  test('las páginas legales tienen los datos del responsable y ya no muestran pendientes', async ({ page }) => {
+    // Quedan pendientes datos que no son del responsable (proveedor de email, plazos del alojamiento).
+    for (const path of ['/privacidad', '/terminos', '/metodologia']) {
+      await page.goto(path);
+      for (const pending of ['[razón social]', '[CUIT', '[número de CUIT]', '[domicilio legal]', '[email de contacto]', '[email de privacidad]']) {
+        await expect(page.getByRole('main')).not.toContainText(pending);
+      }
+    }
+    await page.goto('/privacidad');
+    await expect(page.getByRole('main')).toContainText('El responsable del tratamiento es Mateo Pradal, con domicilio en San Miguel.');
+  });
+
+  for (const path of ['/privacidad', '/terminos', '/cookies', '/metodologia', '/quienes-somos']) {
     test(`accesibilidad de ${path}`, async ({ page }) => {
       await dismissConsent(page);
       await page.goto(path);

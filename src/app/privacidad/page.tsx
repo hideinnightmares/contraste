@@ -32,8 +32,8 @@ export default function PrivacyPage() {
 
         <h2 id="responsable">Quién es responsable</h2>
         <p>
-          El responsable del tratamiento es {org.legalName ?? <Pending>razón social</Pending>}, CUIT{' '}
-          {org.taxId ?? <Pending>número de CUIT</Pending>}, con domicilio en {org.address ?? <Pending>domicilio legal</Pending>}.
+          El responsable del tratamiento es {org.legalName ?? <Pending>razón social</Pending>}
+          {org.taxId && `, CUIT ${org.taxId}`}, con domicilio en {org.address ?? <Pending>domicilio legal</Pending>}.
           Para cualquier consulta sobre privacidad podés escribir a {org.privacyEmail ?? <Pending>email de privacidad</Pending>}.
         </p>
 
@@ -99,7 +99,7 @@ export default function PrivacyPage() {
         <h2 id="terceros">Con quién compartimos datos</h2>
         <p>
           Solo con proveedores que nos prestan servicios y tratan los datos por nuestra cuenta: alojamiento del sitio{' '}
-          (<Pending>proveedor de alojamiento</Pending>) y envío de correos (<Pending>proveedor de email</Pending>). Algunos de
+          (Cloudflare) y envío de correos (<Pending>proveedor de email</Pending>). Algunos de
           esos proveedores pueden estar fuera de la Argentina; en ese caso, la transferencia se hará con los recaudos que exige
           la normativa de protección de datos aplicable.
         </p>
