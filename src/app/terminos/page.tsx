@@ -22,8 +22,8 @@ export default function TermsPage() {
       <Prose>
         <h2 id="quienes">Quiénes somos</h2>
         <p>
-          {site.name} es un diario digital editado por {org.legalName ?? <Pending>razón social</Pending>}, CUIT{' '}
-          {org.taxId ?? <Pending>CUIT</Pending>}, con domicilio en {org.address ?? <Pending>domicilio legal</Pending>}. Al usar
+          {site.name} es un diario digital editado por {org.legalName ?? <Pending>razón social</Pending>}
+          {org.taxId && `, CUIT ${org.taxId}`}, con domicilio en {org.address ?? <Pending>domicilio legal</Pending>}. Al usar
           el sitio aceptás estos términos. Si no estás de acuerdo, te pedimos que no lo uses.
         </p>
 

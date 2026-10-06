@@ -1,3 +1,4 @@
+import { site } from '@/config/site';
 import styles from './Prose.module.css';
 
 /** Contenedor de texto largo (páginas institucionales y legales). */
@@ -12,7 +13,8 @@ export function LegalNotice({ updated }: { updated: string }) {
       <p>
         <strong>Texto base para revisión.</strong> Este documento es un modelo inicial y no constituye asesoramiento jurídico.
         Antes de publicar el sitio, tiene que revisarlo un profesional matriculado según la jurisdicción donde opere el medio y
-        los países desde donde lo visiten. Los datos entre corchetes los completa el responsable del medio.
+        los países desde donde lo visiten.
+        {!site.organization.legalName && ' Los datos entre corchetes los completa el responsable del medio.'}
       </p>
       <p className={styles.updated}>Última actualización del modelo: {updated}.</p>
     </div>

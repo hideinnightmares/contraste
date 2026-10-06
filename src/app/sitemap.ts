@@ -22,6 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'hourly' as const,
       priority: 0.7,
     })),
+    { url: absoluteUrl('/quienes-somos'), changeFrequency: 'monthly', priority: 0.4 },
     { url: absoluteUrl('/metodologia'), changeFrequency: 'monthly', priority: 0.4 },
     { url: absoluteUrl('/privacidad'), changeFrequency: 'yearly', priority: 0.2 },
     { url: absoluteUrl('/terminos'), changeFrequency: 'yearly', priority: 0.2 },

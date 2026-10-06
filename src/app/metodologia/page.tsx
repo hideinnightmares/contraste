@@ -24,7 +24,10 @@ const steps = [
   { title: 'Deduplicación', text: 'Agrupamos los ítems que cuentan el mismo hecho. Las réplicas de un mismo cable cuentan como una sola fuente.' },
   { title: 'Investigación', text: 'Para cada hecho leemos la nota completa de cada fuente que lo permite y buscamos las primarias: el documento, el organismo, el dato original.' },
   { title: 'Verificación', text: 'Comparamos fechas, nombres y cifras entre fuentes. Si no coinciden, el hecho se marca para revisión humana.' },
-  { title: 'Redacción', text: 'Un modelo de lenguaje escribe un borrador original solo con la información verificada. Cada cifra del borrador tiene que estar en alguna fuente.' },
+  {
+    title: 'Redacción',
+    text: `Para los hechos que cuentan al menos ${editorial.drafting.minIndependentSources} fuentes independientes, un modelo de lenguaje escribe un borrador original solo con la información verificada. Cada cifra del borrador tiene que estar en alguna fuente.`,
+  },
   { title: 'Revisión', text: 'Una persona de la redacción revisa y aprueba. Ciertas secciones, como Política, siempre pasan por revisión humana.' },
   { title: 'Publicación', text: 'La nota sale con sus fuentes, su estado de verificación y su historial de cambios a la vista.' },
 ];
@@ -132,8 +135,9 @@ export default function MethodologyPage() {
         <p>
           Usamos modelos de lenguaje para redactar borradores a partir de información verificada. Ese texto se trata siempre
           como un borrador: el sistema tiene prohibido agregar datos, citas o cifras que no estén en las fuentes, y un control
-          automático rechaza los borradores con cifras o nombres que no aparecen en ninguna fuente, o que presentan un mismo
-          dato como confirmado y como no confirmado. Cada borrador registra qué modelo lo escribió.
+          automático marca los borradores con cifras o nombres que no aparecen en ninguna fuente, o que presentan un mismo
+          dato como confirmado y como no confirmado. Esos borradores nunca se publican solos: los revisa una persona. Cada
+          borrador registra qué modelo lo escribió.
         </p>
         <p>
           La publicación automática está {editorial.review.mode === 'policy' ? 'habilitada solo' : 'deshabilitada. Cuando se habilite, aplicará solo'} para notas
